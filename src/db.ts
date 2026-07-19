@@ -22,6 +22,16 @@ export function initDb() {
     CREATE INDEX IF NOT EXISTS idx_vocab_search ON vocab(kana, romaji, meaning_id);
   `);
 
+  // Migration: add group column if not exists
+  try {
+    const checkCol = db.getFirstSync<{ cnt: number }>(`SELECT COUNT(*) as cnt FROM pragma_table_info('vocab') WHERE name = 'group'`);
+    if (checkCol?.cnt === 0) {
+      db.execSync(`ALTER TABLE vocab ADD COLUMN "group" TEXT NOT NULL DEFAULT ''`);
+    }
+  } catch (e) {
+    // Column already exists or pragma not supported, ignore
+  }
+
   const count = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM vocab WHERE source = ?', 'default')?.count ?? 0;
   if (count === 0) insertMany(DEFAULT_VOCAB, 'default');
 }
