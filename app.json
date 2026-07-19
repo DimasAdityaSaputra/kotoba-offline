@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Kotoba Offline",
+    "slug": "kotoba-offline",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "kotobaoffline",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.dimas.kotobaoffline"
+    },
+    "plugins": ["expo-router"]
+  }
+}
