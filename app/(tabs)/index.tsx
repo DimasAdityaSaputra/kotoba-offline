@@ -4,7 +4,7 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { deleteVocab, initDb, listVocab } from '../../src/db';
 import type { VocabFilters, VocabItem } from '../../src/types';
 
-const initialFilters: VocabFilters = { query: '', script_type: 'all', jlpt_level: 'all', category: '' };
+const initialFilters: VocabFilters = { query: '', script_type: 'all', jlpt_level: 'all', category: '', group: '' };
 
 export default function KotobaScreen() {
   const [filters, setFilters] = useState<VocabFilters>(initialFilters);
@@ -43,7 +43,7 @@ export default function KotobaScreen() {
           <Pressable style={styles.card} onLongPress={() => remove(item)}>
             <Text style={styles.kana}>{item.kana}</Text>
             <Text style={styles.meaning}>{item.romaji} · {item.meaning_id}</Text>
-            <Text style={styles.meta}>{item.script_type} · {item.jlpt_level} · {item.category} · {item.source}</Text>
+            <Text style={styles.meta}>{item.script_type} · {item.jlpt_level} · {item.category} · {item.group} · {item.source}</Text>
           </Pressable>
         )}
         ListEmptyComponent={<Text style={styles.empty}>Kosakata kosong.</Text>}

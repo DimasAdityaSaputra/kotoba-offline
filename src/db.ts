@@ -15,6 +15,7 @@ export function initDb() {
       jlpt_level TEXT NOT NULL DEFAULT 'uncategorized',
       script_type TEXT NOT NULL CHECK(script_type IN ('hiragana', 'katakana')),
       source TEXT NOT NULL CHECK(source IN ('default', 'user')),
+      "group" TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -30,8 +31,8 @@ export function insertMany(items: VocabInput[], source: SourceType = 'user') {
   db.withTransactionSync(() => {
     for (const item of items) {
       db.runSync(
-        `INSERT INTO vocab (kana, romaji, meaning_id, category, jlpt_level, script_type, source, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO vocab (kana, romaji, meaning_id, category, jlpt_level, script_type, source, "group", created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         item.kana.trim(),
         item.romaji.trim(),
         item.meaning_id.trim(),
@@ -39,6 +40,7 @@ export function insertMany(items: VocabInput[], source: SourceType = 'user') {
         item.jlpt_level,
         item.script_type,
         source,
+        item.group.trim() || '',
         now,
         now
       );
@@ -52,9 +54,9 @@ export function addVocab(item: VocabInput) {
 
 export function updateVocab(id: number, item: VocabInput) {
   db.runSync(
-    `UPDATE vocab SET kana = ?, romaji = ?, meaning_id = ?, category = ?, jlpt_level = ?, script_type = ?, updated_at = ?
+    `UPDATE vocab SET kana = ?, romaji = ?, meaning_id = ?, category = ?, jlpt_level = ?, script_type = ?, "group" = ?, updated_at = ?
      WHERE id = ? AND source = 'user'`,
-    item.kana.trim(), item.romaji.trim(), item.meaning_id.trim(), item.category.trim() || 'uncategorized', item.jlpt_level, item.script_type, new Date().toISOString(), id
+    item.kana.trim(), item.romaji.trim(), item.meaning_id.trim(), item.category.trim() || 'uncategorized', item.jlpt_level, item.script_type, item.group.trim() || '', new Date().toISOString(), id
   );
 }
 
@@ -89,6 +91,10 @@ export function listVocab(filters: VocabFilters): VocabItem[] {
   if (filters.category.trim()) {
     clauses.push(`LOWER(category) = ?`);
     args.push(filters.category.trim().toLowerCase());
+  }
+  if (filters.group.trim()) {
+    clauses.push(`LOWER("group") = ?`);
+    args.push(filters.group.trim().toLowerCase());
   }
 
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';

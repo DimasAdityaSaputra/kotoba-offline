@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { parseCsv, toCsv } from './csv';
 import type { VocabItem } from './types';
 
-const parsed = parseCsv('kana,romaji,meaning_id,category,jlpt_level,script_type\nおはよう,ohayou,selamat pagi,greeting,N5,hiragana\nBAD,,,,N9,kanji');
+const parsed = parseCsv('kana,romaji,meaning_id,category,jlpt_level,script_type,group\nおはよう,ohayou,selamat pagi,greeting,N5,hiragana,Bab 1\nBAD,,,,N9,kanji,');
 assert.equal(parsed.rows.length, 1);
 assert.equal(parsed.skipped, 1);
 assert.equal(parsed.rows[0].kana, 'おはよう');
@@ -15,6 +15,7 @@ const csv = toCsv([{
   category: 'food',
   jlpt_level: 'N5',
   script_type: 'katakana',
+  group: 'Default',
   source: 'default',
   created_at: '2026-07-19T00:00:00.000Z',
   updated_at: '2026-07-19T00:00:00.000Z'

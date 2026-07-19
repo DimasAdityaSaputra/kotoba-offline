@@ -8,6 +8,7 @@ export default function AddScreen() {
   const [romaji, setRomaji] = useState('');
   const [meaning, setMeaning] = useState('');
   const [category, setCategory] = useState('uncategorized');
+  const [group, setGroup] = useState('');
   const [jlpt, setJlpt] = useState<JlptLevel>('N5');
   const [script, setScript] = useState<ScriptType>('hiragana');
   const [error, setError] = useState('');
@@ -18,8 +19,8 @@ export default function AddScreen() {
       setError('Kana dan arti wajib diisi. Jangan ngadi-ngadi.');
       return;
     }
-    addVocab({ kana, romaji, meaning_id: meaning, category, jlpt_level: jlpt, script_type: script });
-    setKana(''); setRomaji(''); setMeaning(''); setCategory('uncategorized'); setJlpt('N5'); setScript('hiragana'); setError('');
+    addVocab({ kana, romaji, meaning_id: meaning, category, jlpt_level: jlpt, script_type: script, group });
+    setKana(''); setRomaji(''); setMeaning(''); setCategory('uncategorized'); setGroup(''); setJlpt('N5'); setScript('hiragana'); setError('');
     Alert.alert('Tersimpan', 'Kotoba masuk ke database offline.');
   }
 
@@ -31,6 +32,7 @@ export default function AddScreen() {
       <Field label="Romaji" value={romaji} onChangeText={setRomaji} placeholder="ohayou" />
       <Field label="Arti Indonesia" value={meaning} onChangeText={setMeaning} placeholder="selamat pagi" />
       <Field label="Kategori" value={category} onChangeText={setCategory} placeholder="greeting" />
+      <Field label="Group/Bab" value={group} onChangeText={setGroup} placeholder="Bab 1 Minna" />
       <Text style={styles.label}>Script</Text>
       <View style={styles.row}>{(['hiragana', 'katakana'] as const).map((v) => <Chip key={v} label={v} active={script === v} onPress={() => setScript(v)} />)}</View>
       <Text style={styles.label}>JLPT</Text>

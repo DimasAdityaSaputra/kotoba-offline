@@ -9,6 +9,7 @@ export type VocabInput = {
   category: string;
   jlpt_level: JlptLevel;
   script_type: ScriptType;
+  group: string;
 };
 
 export type VocabItem = VocabInput & {
@@ -23,4 +24,5 @@ export type VocabFilters = {
   script_type: 'all' | ScriptType;
   jlpt_level: 'all' | JlptLevel;
   category: string;
+  group: string;
 };
