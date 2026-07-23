@@ -6,10 +6,23 @@
     "orientation": "portrait",
     "scheme": "kotobaoffline",
     "userInterfaceStyle": "automatic",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "android": {
-      "package": "com.dimas.kotobaoffline"
+      "package": "com.dimas.kotobaoffline",
+      "permissions": ["POST_NOTIFICATIONS"]
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Izinkan Kotoba Offline memilih foto untuk profile."
+        }
+      ],
+      "expo-font",
+      "expo-notifications"
+    ]
   }
 }

@@ -17,6 +17,7 @@ const csv = toCsv([{
   script_type: 'katakana',
   group: 'Default',
   source: 'default',
+  review_status: 'new',
   created_at: '2026-07-19T00:00:00.000Z',
   updated_at: '2026-07-19T00:00:00.000Z'
 } satisfies VocabItem]);

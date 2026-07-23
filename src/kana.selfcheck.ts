@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import { romajiToKana } from './kana';
+
+assert.equal(romajiToKana('aiueo'), 'あいうえお');
+assert.equal(romajiToKana('kakikukeko'), 'かきくけこ');
+assert.equal(romajiToKana('sashisuseso'), 'さしすせそ');
+assert.equal(romajiToKana('tachitsuteto'), 'たちつてと');
+assert.equal(romajiToKana('naninuneno'), 'なにぬねの');
+assert.equal(romajiToKana('nana'), 'なな');
+assert.equal(romajiToKana('konnichiha'), 'こんいちは');
+assert.equal(romajiToKana('hahifuheho'), 'はひふへほ');
+assert.equal(romajiToKana('mamimumemo'), 'まみむめも');
+assert.equal(romajiToKana('yayuyo'), 'やゆよ');
+assert.equal(romajiToKana('rarirurero'), 'らりるれろ');
+assert.equal(romajiToKana('wawonn'), 'わをん');
+assert.equal(romajiToKana('wawon', 'hiragana', true), 'わをん');
+assert.equal(romajiToKana('gakkou'), 'がっこう');
+assert.equal(romajiToKana('bennkyou'), 'べんきょう');
+assert.equal(romajiToKana('shashinn'), 'しゃしん');
+assert.equal(romajiToKana('sen nihyaku nana juu kyuu', 'hiragana', true), 'せんにひゃくななじゅうきゅう');
+assert.equal(romajiToKana('san ni', 'hiragana', true), 'さんに');
+assert.equal(romajiToKana('sanzen yon juu kyuu', 'hiragana', true), 'さんぜんよんじゅうきゅう');
+assert.equal(romajiToKana('jaane'), 'じゃあね');
+assert.equal(romajiToKana('koohii', 'katakana'), 'コーヒー');
+assert.equal(romajiToKana('konpyuutaa', 'katakana'), 'コンピューター');
+assert.equal(romajiToKana('chekku', 'katakana'), 'チェック');
+assert.equal(romajiToKana('はchi'), 'はち');
+assert.equal(romajiToKana('ハchi', 'katakana'), 'ハチ');
+assert.equal(romajiToKana('コーh', 'katakana'), 'コーh');
+assert.equal(romajiToKana('コーhi', 'katakana'), 'コーヒ');
+assert.equal(romajiToKana('コーヒi', 'katakana'), 'コーヒー');
+
+console.log('kana selfcheck passed');

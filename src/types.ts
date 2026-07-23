@@ -1,6 +1,7 @@
 export type ScriptType = 'hiragana' | 'katakana';
 export type SourceType = 'default' | 'user';
 export type JlptLevel = 'N5' | 'N4' | 'uncategorized';
+export type ReviewStatus = 'new' | 'hard' | 'known';
 
 export type VocabInput = {
   kana: string;
@@ -15,6 +16,7 @@ export type VocabInput = {
 export type VocabItem = VocabInput & {
   id: number;
   source: SourceType;
+  review_status: ReviewStatus;
   created_at: string;
   updated_at: string;
 };
@@ -25,4 +27,5 @@ export type VocabFilters = {
   jlpt_level: 'all' | JlptLevel;
   category: string;
   group: string;
+  review_status: 'all' | ReviewStatus;
 };
