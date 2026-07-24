@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { allVocab, createBackup, getProfile, getProfileValue, initDb, insertMany, quizStats, resetDefaultVocab, restoreBackup, saveProfile, saveProfileValue } from '../../src/db';
+import { allVocab, createBackup, getProfile, getProfileValue, initDb, insertMany, progressEvents, quizStats, resetDefaultVocab, restoreBackup, saveProfile, saveProfileValue } from '../../src/db';
 import { parseCsv, toCsv } from '../../src/csv';
 import { useTheme, useThemeMode } from '../../src/theme';
 import { clearVoiceCache, listJapaneseVoices, speakJapanese } from '../../src/speech';
@@ -96,10 +96,10 @@ export default function ProfileScreen() {
 
   const progress = getProgress(items);
   const userItems = progress.userItems;
-  const progressItems = progress.progressItems;
-  const contributions = contributionDays(progressItems);
-  const contribList = contributionList(progressItems);
-  const totalContrib = progressItems.length;
+  const eventList = progressEvents();
+  const contributions = contributionDays(eventList);
+  const contribList = eventList;
+  const totalContrib = eventList.reduce((sum, item) => sum + item.count, 0);
 
   return (
     <ScrollView style={[styles.wrap, { backgroundColor: t.bg }]} contentContainerStyle={{ paddingBottom: 108 }}>
@@ -181,8 +181,8 @@ function getProgress(items: VocabItem[]) {
   return { userItems, progressItems, groups: groups.size };
 }
 
-function contributionDays(items: VocabItem[]) {
-  const counts = new Map(contributionList(items).map((item) => [item.date, item.count]));
+function contributionDays(items: { date: string; count: number }[]) {
+  const counts = new Map(items.map((item) => [item.date, item.count]));
   const year = new Date().getFullYear();
   return monthLabels.map((label, month) => {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -192,15 +192,6 @@ function contributionDays(items: VocabItem[]) {
     });
     return { label, month, days };
   });
-}
-
-function contributionList(items: VocabItem[]) {
-  const counts = new Map<string, number>();
-  for (const item of items) {
-    const date = (item.review_status === 'known' ? item.updated_at : item.created_at).slice(0, 10);
-    counts.set(date, (counts.get(date) ?? 0) + 1);
-  }
-  return [...counts.entries()].map(([date, count]) => ({ date, count })).sort((a, b) => b.date.localeCompare(a.date));
 }
 
 function localDateKey(date: Date) {
