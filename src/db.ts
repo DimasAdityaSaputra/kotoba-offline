@@ -46,6 +46,7 @@ export function initDb() {
   addColumnIfMissing('review_status', `ALTER TABLE vocab ADD COLUMN review_status TEXT NOT NULL DEFAULT 'new' CHECK(review_status IN ('new', 'hard', 'known'))`);
   addColumnIfMissing('correct_count', `ALTER TABLE vocab ADD COLUMN correct_count INTEGER NOT NULL DEFAULT 0`);
   addColumnIfMissing('last_correct_at', `ALTER TABLE vocab ADD COLUMN last_correct_at TEXT NOT NULL DEFAULT ''`);
+  ensureProgressEventSchema();
 
   const count = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM vocab WHERE source = ?', 'default')?.count ?? 0;
   if (count === 0) insertMany(DEFAULT_VOCAB, 'default');
@@ -83,6 +84,22 @@ export function addVocab(item: VocabInput) {
 function addColumnIfMissing(name: string, sql: string) {
   const exists = db.getFirstSync<{ cnt: number }>(`SELECT COUNT(*) as cnt FROM pragma_table_info('vocab') WHERE name = ?`, name)?.cnt ?? 0;
   if (exists === 0) db.execSync(sql);
+}
+
+function ensureProgressEventSchema() {
+  const columns = db.getAllSync<{ name: string; notnull: number }>(`SELECT name, notnull FROM pragma_table_info('progress_event')`);
+  const vocabId = columns.find((column) => column.name === 'vocab_id');
+  if (!vocabId?.notnull) return;
+
+  db.execSync(`
+    CREATE TABLE progress_event_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at TEXT NOT NULL
+    );
+    INSERT INTO progress_event_new (created_at) SELECT created_at FROM progress_event;
+    DROP TABLE progress_event;
+    ALTER TABLE progress_event_new RENAME TO progress_event;
+  `);
 }
 
 export function updateVocab(id: number, item: VocabInput) {
