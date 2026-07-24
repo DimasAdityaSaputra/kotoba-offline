@@ -4,7 +4,7 @@ import { Alert, Animated, FlatList, Modal, Pressable, ScrollView, StyleSheet, Te
 import { deleteVocab, initDb, listVocab, updateVocab } from '../../src/db';
 import { romajiToKana } from '../../src/kana';
 import { kanaGroups } from '../../src/kanaGroups';
-import { BASIC_LESSONS } from '../../src/basicLessons';
+import { BASIC_DRILLS, BASIC_FLOW, BASIC_LESSONS, BASIC_PATTERNS } from '../../src/basicLessons';
 import { numberToJapanese } from '../../src/numberQuiz';
 import { speakJapanese } from '../../src/speech';
 import { useTheme } from '../../src/theme';
@@ -179,7 +179,22 @@ function BasicReference() {
   const t = useTheme();
   return <ScrollView style={styles.referenceBox} contentContainerStyle={{ paddingBottom: 108 }}>
     <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Basic Jepang</Text>
-    <Text style={[styles.refNote, { color: t.sub, fontFamily: t.font }]}>Partikel itu penanda fungsi kata. Bahasa Jepang pakai partikel buat nunjukin: ini topik, ini objek, ini tempat, ini tujuan. Hafal fungsi, bukan terjemahan mentah.</Text>
+    <Text style={[styles.refNote, { color: t.sub, fontFamily: t.font }]}>Mulai dari pola, baru partikel. Semua contoh pakai kana biar pemula nggak ditampar kanji dulu.</Text>
+    <View style={[styles.ruleCard, { backgroundColor: t.card, borderColor: t.border }]}>
+      <Text style={[styles.ruleHead, { color: t.text, fontFamily: t.font }]}>Urutan belajar</Text>
+      {BASIC_FLOW.map((row, index) => <Text key={row} style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{index + 1}. {row}</Text>)}
+    </View>
+    <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Pola kalimat inti</Text>
+    {BASIC_PATTERNS.map((pattern) => <View key={pattern.title} style={[styles.lessonCard, { backgroundColor: t.card, borderColor: t.border }]}>
+      <Text style={[styles.lessonSubtitle, { color: t.primary, fontFamily: t.font }]}>{pattern.title}</Text>
+      <Text style={[styles.ruleHead, { color: t.text, fontFamily: t.font }]}>{pattern.formula}</Text>
+      <Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{pattern.use}</Text>
+      <ExampleRow label="Contoh" text={pattern.example} good />
+      <Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{pattern.meaning}</Text>
+      <Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{pattern.note}</Text>
+    </View>)}
+    <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Partikel inti</Text>
+    <Text style={[styles.refNote, { color: t.sub, fontFamily: t.font }]}>Partikel itu penanda fungsi kata. Hafal fungsi, bukan terjemahan mentah.</Text>
     {BASIC_LESSONS.map((lesson) => <View key={lesson.title} style={[styles.lessonCard, { backgroundColor: t.card, borderColor: t.border }]}>
       <View style={styles.lessonHead}>
         <Text style={[styles.lessonParticle, { color: t.text, fontFamily: t.font }]}>{lesson.title}</Text>
@@ -189,6 +204,12 @@ function BasicReference() {
       <ExampleRow label="Salah" text={lesson.wrong} />
       <Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{lesson.meaning}</Text>
       <Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{lesson.note}</Text>
+    </View>)}
+    <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Latihan cepat</Text>
+    {BASIC_DRILLS.map((drill) => <View key={drill.prompt} style={[styles.lessonCard, { backgroundColor: t.card, borderColor: t.border }]}>
+      <Text style={[styles.ruleHead, { color: t.text, fontFamily: t.font }]}>{drill.prompt}</Text>
+      <Text style={[styles.refRomaji, { color: t.primary, fontFamily: t.font }]}>Jawaban: {drill.answer}</Text>
+      <Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{drill.reason}</Text>
     </View>)}
   </ScrollView>;
 }

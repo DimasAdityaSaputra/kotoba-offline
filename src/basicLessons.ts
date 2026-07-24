@@ -8,6 +8,71 @@ export type BasicLesson = {
   note: string;
 };
 
+export type BasicPattern = {
+  title: string;
+  formula: string;
+  use: string;
+  example: string;
+  meaning: string;
+  note: string;
+};
+
+export type BasicDrill = {
+  prompt: string;
+  answer: string;
+  reason: string;
+};
+
+export const BASIC_FLOW = [
+  'Baca contoh pakai kana dulu. Jangan buru-buru kanji.',
+  'Pahami pola kalimat: topik + keterangan + kata kerja/desu.',
+  'Partikel dibaca sebagai fungsi kata, bukan diterjemahin satu-satu.',
+  'Latih 1 pola sampai otomatis. Baru lanjut pola lain.'
+];
+
+export const BASIC_PATTERNS: BasicPattern[] = [
+  {
+    title: 'A は B です',
+    formula: 'A は B です。',
+    use: 'Pakai buat perkenalan, identitas, atau “A itu B”.',
+    example: 'わたしはがくせいです。',
+    meaning: 'Saya siswa.',
+    note: 'は nunjukin topik. です bikin kalimat sopan dan rapi.'
+  },
+  {
+    title: 'A は B じゃないです',
+    formula: 'A は B じゃないです。',
+    use: 'Pakai buat bilang “A bukan B”.',
+    example: 'わたしはいしゃじゃないです。',
+    meaning: 'Saya bukan dokter.',
+    note: 'Versi sopan ringan. Di percakapan pemula, ini cukup aman.'
+  },
+  {
+    title: '〜を します',
+    formula: 'もの を します。',
+    use: 'Pakai ketika melakukan aksi ke objek.',
+    example: 'べんきょうをします。',
+    meaning: 'Saya belajar.',
+    note: 'を menandai benda/kegiatan yang kena aksi.'
+  },
+  {
+    title: '〜に いきます',
+    formula: 'ばしょ に いきます。',
+    use: 'Pakai buat pergi ke suatu tujuan.',
+    example: 'がっこうにいきます。',
+    meaning: 'Saya pergi ke sekolah.',
+    note: 'Tujuan pakai に. Tempat aksi pakai で.'
+  },
+  {
+    title: '〜で します',
+    formula: 'ばしょ で します。',
+    use: 'Pakai buat aksi yang terjadi di suatu tempat.',
+    example: 'いえでべんきょうします。',
+    meaning: 'Saya belajar di rumah.',
+    note: 'Aksinya terjadi di rumah, jadi で.'
+  }
+];
+
 export const BASIC_LESSONS: BasicLesson[] = [
   {
     title: 'は',
@@ -43,7 +108,7 @@ export const BASIC_LESSONS: BasicLesson[] = [
     right: 'がっこうにいきます。',
     wrong: 'がっこうでいきます。',
     meaning: 'Saya pergi ke sekolah.',
-    note: 'で dipakai lokasi aksi terjadi. 行きます butuh tujuan, jadi に.'
+    note: 'で dipakai lokasi aksi terjadi. いきます butuh tujuan, jadi に.'
   },
   {
     title: 'で',
@@ -72,4 +137,12 @@ export const BASIC_LESSONS: BasicLesson[] = [
     meaning: 'Apakah kamu siswa?',
     note: 'か taruh di akhir. Pola sopan dasar: 〜ですか / 〜ますか.'
   }
+];
+
+export const BASIC_DRILLS: BasicDrill[] = [
+  { prompt: 'みず＿のみます。', answer: 'を', reason: 'みず adalah objek yang diminum.' },
+  { prompt: 'がっこう＿いきます。', answer: 'に', reason: 'がっこう adalah tujuan pergi.' },
+  { prompt: 'いえ＿べんきょうします。', answer: 'で', reason: 'いえ adalah tempat aksi belajar.' },
+  { prompt: 'わたし＿ほんです。', answer: 'の', reason: 'Maksudnya buku milik saya.' },
+  { prompt: 'がくせいです＿', answer: 'か', reason: 'か di akhir bikin kalimat tanya.' }
 ];
