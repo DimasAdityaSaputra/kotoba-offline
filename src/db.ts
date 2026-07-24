@@ -74,7 +74,12 @@ function insertRows(items: VocabInput[], source: SourceType, now: string) {
 
 export function insertMany(items: VocabInput[], source: SourceType = 'user') {
   const now = new Date().toISOString();
-  db.withTransactionSync(() => insertRows(items, source, now));
+  db.withTransactionSync(() => {
+    insertRows(items, source, now);
+    if (source === 'user') {
+      for (const _item of items) recordProgress(now);
+    }
+  });
 }
 
 export function addVocab(item: VocabInput) {
@@ -87,9 +92,9 @@ function addColumnIfMissing(name: string, sql: string) {
 }
 
 function ensureProgressEventSchema() {
-  const columns = db.getAllSync<{ name: string; notnull: number }>(`SELECT name, notnull FROM pragma_table_info('progress_event')`);
+  const columns = db.getAllSync<{ name: string; required: number }>(`SELECT name, "notnull" AS required FROM pragma_table_info('progress_event')`);
   const vocabId = columns.find((column) => column.name === 'vocab_id');
-  if (!vocabId?.notnull) return;
+  if (!vocabId?.required) return;
 
   db.execSync(`
     CREATE TABLE progress_event_new (
@@ -119,8 +124,8 @@ export function markCorrect(id: number) {
   db.runSync(`UPDATE vocab SET review_status = 'known', correct_count = correct_count + 1, last_correct_at = ?, updated_at = ? WHERE id = ?`, now, now, id);
 }
 
-export function recordProgress() {
-  db.runSync('INSERT INTO progress_event (created_at) VALUES (?)', new Date().toISOString());
+export function recordProgress(createdAt = new Date().toISOString()) {
+  db.runSync('INSERT INTO progress_event (created_at) VALUES (?)', createdAt);
 }
 
 export function deleteVocab(id: number) {
