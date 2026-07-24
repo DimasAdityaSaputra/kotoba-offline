@@ -19,9 +19,7 @@ const csv = toCsv([{
   source: 'default',
   review_status: 'new',
   created_at: '2026-07-19T00:00:00.000Z',
-  updated_at: '2026-07-19T00:00:00.000Z',
-  correct_count: 0,
-  last_correct_at: ''
+  updated_at: '2026-07-19T00:00:00.000Z'
 } satisfies VocabItem]);
 assert.ok(csv.includes('コーヒー'));
 assert.ok(csv.startsWith('kana,romaji,meaning_id'));

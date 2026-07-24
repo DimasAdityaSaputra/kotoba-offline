@@ -19,8 +19,6 @@ export type VocabItem = VocabInput & {
   review_status: ReviewStatus;
   created_at: string;
   updated_at: string;
-  correct_count: number;
-  last_correct_at: string;
 };
 
 export type VocabFilters = {

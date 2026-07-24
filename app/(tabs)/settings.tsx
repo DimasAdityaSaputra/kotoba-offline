@@ -129,14 +129,14 @@ export default function ProfileScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.yearScroll}>
         {contributions.map((month) => <MonthGrid key={month.month} month={month} onSelect={setSelectedDay} />)}
       </ScrollView>
-      <View style={styles.legend}><Text style={[styles.small, { color: t.sub, fontFamily: t.font }]}>Less</Text><View style={[styles.square, levelStyle(0, t.dark)]} /><View style={[styles.square, levelStyle(5, t.dark)]} /><View style={[styles.square, levelStyle(15, t.dark)]} /><View style={[styles.square, levelStyle(30, t.dark)]} /><Text style={[styles.small, { color: t.sub, fontFamily: t.font }]}>More</Text></View>
-      {selectedDay && <Text style={[styles.selectedDay, { color: t.text, fontFamily: t.font }]}>{formatDate(selectedDay.date)} · {selectedDay.count}/30 progress</Text>}
+      <View style={styles.legend}><Text style={[styles.small, { color: t.sub, fontFamily: t.font }]}>Less</Text><View style={[styles.square, levelStyle(0, t.dark)]} /><View style={[styles.square, levelStyle(1, t.dark)]} /><View style={[styles.square, levelStyle(3, t.dark)]} /><View style={[styles.square, levelStyle(5, t.dark)]} /><Text style={[styles.small, { color: t.sub, fontFamily: t.font }]}>More</Text></View>
+      {selectedDay && <Text style={[styles.selectedDay, { color: t.text, fontFamily: t.font }]}>{formatDate(selectedDay.date)} · {selectedDay.count} progress</Text>}
 
       <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Progress list</Text>
       {contribList.length === 0 ? <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Belum ada progress. Tambah kotoba atau kerjain quiz dulu.</Text> : contribList.map((item) => (
         <View key={item.date} style={[styles.contribRow, { backgroundColor: t.card, borderColor: t.border }]}>
           <Text style={[styles.contribDate, { color: t.text, fontFamily: t.font }]}>{item.date}</Text>
-          <Text style={[styles.contribText, { color: t.sub, fontFamily: t.font }]}>{item.count}/30 progress</Text>
+          <Text style={[styles.contribText, { color: t.sub, fontFamily: t.font }]}>{item.count} progress</Text>
         </View>
       ))}
 
@@ -232,9 +232,9 @@ function MonthGrid({ month, onSelect }: { month: ReturnType<typeof contributionD
 }
 
 function levelStyle(count: number, dark: boolean) {
-  if (count >= 30) return dark ? styles.dl3 : styles.l3;
-  if (count >= 15) return dark ? styles.dl2 : styles.l2;
-  if (count >= 5) return dark ? styles.dl1 : styles.l1;
+  if (count >= 5) return dark ? styles.dl3 : styles.l3;
+  if (count >= 3) return dark ? styles.dl2 : styles.l2;
+  if (count >= 1) return dark ? styles.dl1 : styles.l1;
   return dark ? styles.dl0 : styles.l0;
 }
 

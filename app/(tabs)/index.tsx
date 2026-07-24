@@ -99,7 +99,7 @@ export default function KotobaScreen() {
               windowSize={7}
               removeClippedSubviews
               renderItem={({ item }) => (
-                <Pressable style={[styles.card, progressCardStyle(item.correct_count, t)]} onPress={() => openEdit(item)} onLongPress={() => remove(item)}>
+                <Pressable style={[styles.card, { backgroundColor: item.review_status === 'known' ? (t.dark ? '#1e3a8a' : '#dbeafe') : t.card, borderColor: item.review_status === 'known' ? t.primary : t.border }]} onPress={() => openEdit(item)} onLongPress={() => remove(item)}>
                   <View style={styles.cardMain}>
                     <View style={styles.wordTop}><Text style={[styles.kana, { color: t.text, fontFamily: t.font }]}>{item.kana}</Text><Pressable style={[styles.speakButton, { backgroundColor: t.card2 }]} onPress={() => speakJapanese(item.kana)}><Text style={[styles.speakText, { color: t.primary }]}>▶</Text></Pressable></View>
                     <Text style={[styles.meaning, { color: t.text, fontFamily: t.font }]} numberOfLines={1}>{item.meaning_id}</Text>
@@ -319,15 +319,6 @@ function getKotobaStats(items: VocabItem[]) {
     n5: items.filter((item) => item.jlpt_level === 'N5').length,
     user: items.filter((item) => item.source === 'user').length
   };
-}
-
-
-function progressCardStyle(count: number, t: ReturnType<typeof useTheme>) {
-  if (count >= 30) return { backgroundColor: t.dark ? '#172554' : '#bfdbfe', borderColor: '#2563eb' };
-  if (count >= 15) return { backgroundColor: t.dark ? '#1e3a8a' : '#dbeafe', borderColor: '#3b82f6' };
-  if (count >= 5) return { backgroundColor: t.dark ? '#1d4ed8' : '#eff6ff', borderColor: '#60a5fa' };
-  if (count >= 1) return { backgroundColor: t.dark ? '#1e40af' : '#f8fbff', borderColor: '#93c5fd' };
-  return { backgroundColor: t.card, borderColor: t.border };
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
