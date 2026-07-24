@@ -96,10 +96,9 @@ export default function ProfileScreen() {
 
   const progress = getProgress(items);
   const userItems = progress.userItems;
-  const progressItems = progress.progressItems;
-  const contributions = contributionDays(progressItems);
-  const contribList = contributionList(progressItems);
-  const totalContrib = progressItems.length;
+  const contributions = contributionDays(userItems);
+  const contribList = contributionList(userItems);
+  const totalContrib = userItems.length;
 
   return (
     <ScrollView style={[styles.wrap, { backgroundColor: t.bg }]} contentContainerStyle={{ paddingBottom: 108 }}>
@@ -125,7 +124,7 @@ export default function ProfileScreen() {
       </View>
 
       <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Progress</Text>
-      <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>{totalContrib} progress tersimpan · {new Date().getFullYear()}</Text>
+      <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>{totalContrib} kotoba ditambah user · {new Date().getFullYear()}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.yearScroll}>
         {contributions.map((month) => <MonthGrid key={month.month} month={month} onSelect={setSelectedDay} />)}
       </ScrollView>
@@ -136,7 +135,7 @@ export default function ProfileScreen() {
       {contribList.length === 0 ? <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Belum ada progress. Tambah kotoba atau kerjain quiz dulu.</Text> : contribList.map((item) => (
         <View key={item.date} style={[styles.contribRow, { backgroundColor: t.card, borderColor: t.border }]}>
           <Text style={[styles.contribDate, { color: t.text, fontFamily: t.font }]}>{item.date}</Text>
-          <Text style={[styles.contribText, { color: t.sub, fontFamily: t.font }]}>{item.count} progress</Text>
+          <Text style={[styles.contribText, { color: t.sub, fontFamily: t.font }]}>{item.count} kotoba</Text>
         </View>
       ))}
 
@@ -171,14 +170,12 @@ const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Se
 
 function getProgress(items: VocabItem[]) {
   const userItems: VocabItem[] = [];
-  const progressItems: VocabItem[] = [];
   const groups = new Set<string>();
   for (const item of items) {
     if (item.source === 'user') userItems.push(item);
-    if (item.source === 'user' || item.review_status === 'known') progressItems.push(item);
     if (item.group) groups.add(item.group);
   }
-  return { userItems, progressItems, groups: groups.size };
+  return { userItems, groups: groups.size };
 }
 
 function contributionDays(items: VocabItem[]) {
@@ -197,7 +194,7 @@ function contributionDays(items: VocabItem[]) {
 function contributionList(items: VocabItem[]) {
   const counts = new Map<string, number>();
   for (const item of items) {
-    const date = (item.review_status === 'known' ? item.updated_at : item.created_at).slice(0, 10);
+    const date = item.created_at.slice(0, 10);
     counts.set(date, (counts.get(date) ?? 0) + 1);
   }
   return [...counts.entries()].map(([date, count]) => ({ date, count })).sort((a, b) => b.date.localeCompare(a.date));
