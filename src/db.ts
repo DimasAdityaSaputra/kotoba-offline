@@ -20,7 +20,9 @@ export function initDb() {
       "group" TEXT NOT NULL DEFAULT '',
       review_status TEXT NOT NULL DEFAULT 'new' CHECK(review_status IN ('new', 'hard', 'known')),
       created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
+      updated_at TEXT NOT NULL,
+      correct_count INTEGER NOT NULL DEFAULT 0,
+      last_correct_at TEXT NOT NULL DEFAULT ''
     );
     CREATE INDEX IF NOT EXISTS idx_vocab_search ON vocab(kana, romaji, meaning_id);
     CREATE TABLE IF NOT EXISTS profile (
@@ -38,6 +40,8 @@ export function initDb() {
 
   addColumnIfMissing('group', `ALTER TABLE vocab ADD COLUMN "group" TEXT NOT NULL DEFAULT ''`);
   addColumnIfMissing('review_status', `ALTER TABLE vocab ADD COLUMN review_status TEXT NOT NULL DEFAULT 'new' CHECK(review_status IN ('new', 'hard', 'known'))`);
+  addColumnIfMissing('correct_count', `ALTER TABLE vocab ADD COLUMN correct_count INTEGER NOT NULL DEFAULT 0`);
+  addColumnIfMissing('last_correct_at', `ALTER TABLE vocab ADD COLUMN last_correct_at TEXT NOT NULL DEFAULT ''`);
 
   const count = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM vocab WHERE source = ?', 'default')?.count ?? 0;
   if (count === 0) insertMany(DEFAULT_VOCAB, 'default');
@@ -47,8 +51,8 @@ export function initDb() {
 function insertRows(items: VocabInput[], source: SourceType, now: string) {
   for (const item of items) {
     db.runSync(
-      `INSERT INTO vocab (kana, romaji, meaning_id, category, jlpt_level, script_type, source, "group", review_status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)`,
+      `INSERT INTO vocab (kana, romaji, meaning_id, category, jlpt_level, script_type, source, "group", review_status, created_at, updated_at, correct_count, last_correct_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, 0, '')`,
       item.kana.trim(),
       item.romaji.trim(),
       item.meaning_id.trim(),
@@ -87,6 +91,11 @@ export function updateVocab(id: number, item: VocabInput) {
 
 export function setReviewStatus(id: number, status: VocabItem['review_status']) {
   db.runSync(`UPDATE vocab SET review_status = ?, updated_at = ? WHERE id = ?`, status, new Date().toISOString(), id);
+}
+
+export function markCorrect(id: number) {
+  const now = new Date().toISOString();
+  db.runSync(`UPDATE vocab SET review_status = 'known', correct_count = correct_count + 1, last_correct_at = ?, updated_at = ? WHERE id = ?`, now, now, id);
 }
 
 export function deleteVocab(id: number) {
@@ -206,9 +215,9 @@ export function restoreBackup(data: BackupData) {
   db.withTransactionSync(() => {
     for (const [key, value] of Object.entries(data.profile)) db.runSync('INSERT OR REPLACE INTO profile (key, value) VALUES (?, ?)', key, String(value));
     for (const item of data.userVocab) {
-      db.runSync(`INSERT INTO vocab (kana, romaji, meaning_id, category, jlpt_level, script_type, source, "group", review_status, created_at, updated_at)
-        SELECT ?, ?, ?, ?, ?, ?, 'user', ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM vocab WHERE source = 'user' AND kana = ? AND meaning_id = ?)`,
-        item.kana, item.romaji, item.meaning_id, item.category || 'uncategorized', item.jlpt_level || 'uncategorized', item.script_type, item.group || '', item.review_status || 'new', item.created_at || now, item.updated_at || now, item.kana, item.meaning_id);
+      db.runSync(`INSERT INTO vocab (kana, romaji, meaning_id, category, jlpt_level, script_type, source, "group", review_status, created_at, updated_at, correct_count, last_correct_at)
+        SELECT ?, ?, ?, ?, ?, ?, 'user', ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM vocab WHERE source = 'user' AND kana = ? AND meaning_id = ?)`,
+        item.kana, item.romaji, item.meaning_id, item.category || 'uncategorized', item.jlpt_level || 'uncategorized', item.script_type, item.group || '', item.review_status || 'new', item.created_at || now, item.updated_at || now, item.correct_count || 0, item.last_correct_at || '', item.kana, item.meaning_id);
     }
     for (const row of data.quizResults) db.runSync('INSERT INTO quiz_result (modes, score, total, created_at) VALUES (?, ?, ?, ?)', row.modes, row.score, row.total, row.created_at || now);
   });
