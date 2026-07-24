@@ -56,7 +56,7 @@ function transformStep(step: StrokeStep, scale: number, dx: number, dy: number):
   return {
     ...step,
     path: transformPath(step.path, scale, dx, dy),
-    fillPaths: step.fillPaths?.map((path) => transformPath(path, scale, dx, dy)),
+    fillPaths: undefined,
     points: step.points?.map(point),
     start: point(step.start),
     end: point(step.end)
