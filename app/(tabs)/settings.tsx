@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { allVocab, createBackup, getProfile, getProfileValue, initDb, insertMany, quizStats, resetDefaultVocab, restoreBackup, saveProfile, saveProfileValue } from '../../src/db';
+import { allVocab, createBackup, getProfile, getProfileValue, initDb, insertMany, progressEvents, quizStats, resetDefaultVocab, restoreBackup, saveProfile, saveProfileValue } from '../../src/db';
 import { parseCsv, toCsv } from '../../src/csv';
 import { useTheme, useThemeMode } from '../../src/theme';
 import { clearVoiceCache, listJapaneseVoices, speakJapanese } from '../../src/speech';
@@ -96,9 +96,10 @@ export default function ProfileScreen() {
 
   const progress = getProgress(items);
   const userItems = progress.userItems;
-  const contributions = contributionDays(userItems);
-  const contribList = contributionList(userItems);
-  const totalContrib = userItems.length;
+  const eventList = progressEvents();
+  const contributions = contributionDays(eventList);
+  const contribList = eventList;
+  const totalContrib = eventList.reduce((sum, item) => sum + item.count, 0);
 
   return (
     <ScrollView style={[styles.wrap, { backgroundColor: t.bg }]} contentContainerStyle={{ paddingBottom: 108 }}>
@@ -124,18 +125,18 @@ export default function ProfileScreen() {
       </View>
 
       <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Progress</Text>
-      <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>{totalContrib} kotoba ditambah user · {new Date().getFullYear()}</Text>
+      <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>{totalContrib} progress tahun ini · target 30/hari buat biru tua</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.yearScroll}>
         {contributions.map((month) => <MonthGrid key={month.month} month={month} onSelect={setSelectedDay} />)}
       </ScrollView>
-      <View style={styles.legend}><Text style={[styles.small, { color: t.sub, fontFamily: t.font }]}>Less</Text><View style={[styles.square, levelStyle(0, t.dark)]} /><View style={[styles.square, levelStyle(1, t.dark)]} /><View style={[styles.square, levelStyle(3, t.dark)]} /><View style={[styles.square, levelStyle(5, t.dark)]} /><Text style={[styles.small, { color: t.sub, fontFamily: t.font }]}>More</Text></View>
-      {selectedDay && <Text style={[styles.selectedDay, { color: t.text, fontFamily: t.font }]}>{formatDate(selectedDay.date)} · {selectedDay.count} progress</Text>}
+      <View style={styles.legend}><Text style={[styles.small, { color: t.sub, fontFamily: t.font }]}>Less</Text><View style={[styles.square, levelStyle(0, t.dark)]} /><View style={[styles.square, levelStyle(5, t.dark)]} /><View style={[styles.square, levelStyle(15, t.dark)]} /><View style={[styles.square, levelStyle(30, t.dark)]} /><Text style={[styles.small, { color: t.sub, fontFamily: t.font }]}>More</Text></View>
+      {selectedDay && <Text style={[styles.selectedDay, { color: t.text, fontFamily: t.font }]}>{formatDate(selectedDay.date)} · {selectedDay.count}/30 progress</Text>}
 
       <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Progress list</Text>
       {contribList.length === 0 ? <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Belum ada progress. Tambah kotoba atau kerjain quiz dulu.</Text> : contribList.map((item) => (
         <View key={item.date} style={[styles.contribRow, { backgroundColor: t.card, borderColor: t.border }]}>
           <Text style={[styles.contribDate, { color: t.text, fontFamily: t.font }]}>{item.date}</Text>
-          <Text style={[styles.contribText, { color: t.sub, fontFamily: t.font }]}>{item.count} kotoba</Text>
+          <Text style={[styles.contribText, { color: t.sub, fontFamily: t.font }]}>{item.count}/30 progress</Text>
         </View>
       ))}
 
@@ -178,8 +179,8 @@ function getProgress(items: VocabItem[]) {
   return { userItems, groups: groups.size };
 }
 
-function contributionDays(items: VocabItem[]) {
-  const counts = new Map(contributionList(items).map((item) => [item.date, item.count]));
+function contributionDays(items: { date: string; count: number }[]) {
+  const counts = new Map(items.map((item) => [item.date, item.count]));
   const year = new Date().getFullYear();
   return monthLabels.map((label, month) => {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -189,15 +190,6 @@ function contributionDays(items: VocabItem[]) {
     });
     return { label, month, days };
   });
-}
-
-function contributionList(items: VocabItem[]) {
-  const counts = new Map<string, number>();
-  for (const item of items) {
-    const date = item.created_at.slice(0, 10);
-    counts.set(date, (counts.get(date) ?? 0) + 1);
-  }
-  return [...counts.entries()].map(([date, count]) => ({ date, count })).sort((a, b) => b.date.localeCompare(a.date));
 }
 
 function localDateKey(date: Date) {
@@ -229,9 +221,9 @@ function MonthGrid({ month, onSelect }: { month: ReturnType<typeof contributionD
 }
 
 function levelStyle(count: number, dark: boolean) {
-  if (count >= 5) return dark ? styles.dl3 : styles.l3;
-  if (count >= 3) return dark ? styles.dl2 : styles.l2;
-  if (count >= 1) return dark ? styles.dl1 : styles.l1;
+  if (count >= 30) return dark ? styles.dl3 : styles.l3;
+  if (count >= 15) return dark ? styles.dl2 : styles.l2;
+  if (count >= 5) return dark ? styles.dl1 : styles.l1;
   return dark ? styles.dl0 : styles.l0;
 }
 
