@@ -99,7 +99,7 @@ export default function KotobaScreen() {
               windowSize={7}
               removeClippedSubviews
               renderItem={({ item }) => (
-                <Pressable style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]} onPress={() => openEdit(item)} onLongPress={() => remove(item)}>
+                <Pressable style={[styles.card, { backgroundColor: item.review_status === 'known' ? (t.dark ? '#1e3a8a' : '#dbeafe') : t.card, borderColor: item.review_status === 'known' ? t.primary : t.border }]} onPress={() => openEdit(item)} onLongPress={() => remove(item)}>
                   <View style={styles.cardMain}>
                     <View style={styles.wordTop}><Text style={[styles.kana, { color: t.text, fontFamily: t.font }]}>{item.kana}</Text><Pressable style={[styles.speakButton, { backgroundColor: t.card2 }]} onPress={() => speakJapanese(item.kana)}><Text style={[styles.speakText, { color: t.primary }]}>▶</Text></Pressable></View>
                     <Text style={[styles.meaning, { color: t.text, fontFamily: t.font }]} numberOfLines={1}>{item.meaning_id}</Text>

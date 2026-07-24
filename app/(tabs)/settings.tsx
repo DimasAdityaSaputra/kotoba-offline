@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { allVocab, getProfile, getProfileValue, initDb, insertMany, quizStats, resetDefaultVocab, saveProfile, saveProfileValue } from '../../src/db';
+import { allVocab, createBackup, getProfile, getProfileValue, initDb, insertMany, quizStats, resetDefaultVocab, restoreBackup, saveProfile, saveProfileValue } from '../../src/db';
 import { parseCsv, toCsv } from '../../src/csv';
 import { useTheme, useThemeMode } from '../../src/theme';
 import { clearVoiceCache, listJapaneseVoices, speakJapanese } from '../../src/speech';
@@ -52,6 +52,27 @@ export default function ProfileScreen() {
     await FileSystem.writeAsStringAsync(uri, csv);
     if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'text/csv', dialogTitle: 'Export Kotoba CSV' });
     else Alert.alert('Export selesai', uri);
+  }
+
+  async function exportBackup() {
+    const uri = `${FileSystem.cacheDirectory}kotoba-backup.json`;
+    await FileSystem.writeAsStringAsync(uri, JSON.stringify(createBackup(), null, 2));
+    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'application/json', dialogTitle: 'Backup Kotoba' });
+    else Alert.alert('Backup selesai', uri);
+  }
+
+  async function importBackup() {
+    const picked = await DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true });
+    if (picked.canceled) return;
+    const uri = picked.assets[0]?.uri;
+    if (!uri) return;
+    try {
+      restoreBackup(JSON.parse(await FileSystem.readAsStringAsync(uri)));
+      load();
+      Alert.alert('Restore selesai', 'Data backup digabung ke data lokal.');
+    } catch {
+      Alert.alert('Restore gagal', 'File backup rusak atau bukan backup Kotoba.');
+    }
   }
 
   async function pickAvatar() {
@@ -102,16 +123,16 @@ export default function ProfileScreen() {
         <Stat label="Bab" value={`${progress.groups}`} />
       </View>
 
-      <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Contribution</Text>
+      <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Progress</Text>
       <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>{totalContrib} kotoba ditambah user · {new Date().getFullYear()}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.yearScroll}>
         {contributions.map((month) => <MonthGrid key={month.month} month={month} onSelect={setSelectedDay} />)}
       </ScrollView>
       <View style={styles.legend}><Text style={[styles.small, { color: t.sub, fontFamily: t.font }]}>Less</Text><View style={[styles.square, levelStyle(0, t.dark)]} /><View style={[styles.square, levelStyle(1, t.dark)]} /><View style={[styles.square, levelStyle(3, t.dark)]} /><View style={[styles.square, levelStyle(5, t.dark)]} /><Text style={[styles.small, { color: t.sub, fontFamily: t.font }]}>More</Text></View>
-      {selectedDay && <Text style={[styles.selectedDay, { color: t.text, fontFamily: t.font }]}>{formatDate(selectedDay.date)} · {selectedDay.count} kontribusi</Text>}
+      {selectedDay && <Text style={[styles.selectedDay, { color: t.text, fontFamily: t.font }]}>{formatDate(selectedDay.date)} · {selectedDay.count} progress</Text>}
 
-      <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Contribution list</Text>
-      {contribList.length === 0 ? <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Belum ada kontribusi. Tambah kotoba dulu, jangan cuma niat.</Text> : contribList.map((item) => (
+      <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Progress list</Text>
+      {contribList.length === 0 ? <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Belum ada progress. Tambah kotoba atau kerjain quiz dulu.</Text> : contribList.map((item) => (
         <View key={item.date} style={[styles.contribRow, { backgroundColor: t.card, borderColor: t.border }]}>
           <Text style={[styles.contribDate, { color: t.text, fontFamily: t.font }]}>{item.date}</Text>
           <Text style={[styles.contribText, { color: t.sub, fontFamily: t.font }]}>{item.count} kotoba</Text>
@@ -135,6 +156,8 @@ export default function ProfileScreen() {
 
       <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Settings</Text>
       <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Full offline. Data disimpan di SQLite lokal HP.</Text>
+      <Button label="Backup JSON" onPress={exportBackup} />
+      <Button label="Restore JSON" onPress={importBackup} />
       <Button label="Import CSV" onPress={importCsv} />
       <Button label="Export CSV" onPress={exportCsv} />
       <Button label="Reset semua kotoba" danger onPress={resetDefaults} />

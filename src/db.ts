@@ -190,3 +190,26 @@ export function getProfileValue(key: string) {
 export function saveProfileValue(key: string, value: string) {
   db.runSync('INSERT OR REPLACE INTO profile (key, value) VALUES (?, ?)', key, value);
 }
+
+export type BackupData = { version: 1; exportedAt: string; profile: Record<string, string>; userVocab: VocabItem[]; quizResults: { modes: string; score: number; total: number; created_at: string }[]; };
+
+export function createBackup(): BackupData {
+  initDb();
+  const profileRows = db.getAllSync<{ key: string; value: string }>('SELECT key, value FROM profile');
+  return { version: 1, exportedAt: new Date().toISOString(), profile: Object.fromEntries(profileRows.map((row) => [row.key, row.value])), userVocab: db.getAllSync<VocabItem>(`SELECT * FROM vocab WHERE source = 'user' ORDER BY id`), quizResults: db.getAllSync<{ modes: string; score: number; total: number; created_at: string }>('SELECT modes, score, total, created_at FROM quiz_result ORDER BY id') };
+}
+
+export function restoreBackup(data: BackupData) {
+  initDb();
+  if (!data || data.version !== 1 || !Array.isArray(data.userVocab) || !Array.isArray(data.quizResults) || typeof data.profile !== 'object') throw new Error('Invalid backup');
+  const now = new Date().toISOString();
+  db.withTransactionSync(() => {
+    for (const [key, value] of Object.entries(data.profile)) db.runSync('INSERT OR REPLACE INTO profile (key, value) VALUES (?, ?)', key, String(value));
+    for (const item of data.userVocab) {
+      db.runSync(`INSERT INTO vocab (kana, romaji, meaning_id, category, jlpt_level, script_type, source, "group", review_status, created_at, updated_at)
+        SELECT ?, ?, ?, ?, ?, ?, 'user', ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM vocab WHERE source = 'user' AND kana = ? AND meaning_id = ?)`,
+        item.kana, item.romaji, item.meaning_id, item.category || 'uncategorized', item.jlpt_level || 'uncategorized', item.script_type, item.group || '', item.review_status || 'new', item.created_at || now, item.updated_at || now, item.kana, item.meaning_id);
+    }
+    for (const row of data.quizResults) db.runSync('INSERT INTO quiz_result (modes, score, total, created_at) VALUES (?, ?, ?, ?)', row.modes, row.score, row.total, row.created_at || now);
+  });
+}

@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { initDb, listGroups, listVocab, saveQuizResult } from '../../src/db';
+import { initDb, listGroups, listVocab, saveQuizResult, setReviewStatus } from '../../src/db';
 import { romajiToKana } from '../../src/kana';
 import { normalizeAnswer, numberToJapanese } from '../../src/numberQuiz';
 import { isQuizAnswerCorrect } from '../../src/quizCheck';
@@ -11,7 +11,7 @@ import { useTheme } from '../../src/theme';
 import type { VocabItem } from '../../src/types';
 
 type Mode = 'number-ja' | 'number-id' | 'kana-meaning' | 'kana-romaji' | 'meaning-kana' | 'letter-romaji' | 'kana-letter';
-type Question = { prompt: string; answer: string; alt?: string; kind: 'number' | 'kana' | 'letter'; mode: Mode; inputKana?: boolean; inputScript?: 'hiragana' | 'katakana' };
+type Question = { prompt: string; answer: string; alt?: string; kind: 'number' | 'kana' | 'letter'; mode: Mode; inputKana?: boolean; inputScript?: 'hiragana' | 'katakana'; vocabId?: number };
 type Wrong = Question & { given: string };
 
 const numberLevels = [10, 100, 1000, 10000, 100000];
@@ -90,6 +90,7 @@ export default function QuizScreen() {
   function submit() {
     if (!current) return;
     const correct = isQuizAnswerCorrect(answer, current.answer, current.alt, current.inputKana, current.inputScript);
+    if (correct && current.vocabId) setReviewStatus(current.vocabId, 'known');
     const nextWrong = correct ? wrong : [...wrong, { ...current, given: answer }];
     if (index + 1 >= questions.length) {
       setWrong(nextWrong);
@@ -259,9 +260,9 @@ function buildQuestions(mode: Mode, total: number, level: number, vocab: VocabIt
   }
 
   return shuffled(vocab).slice(0, total).map((item) => {
-    if (mode === 'kana-meaning') return { prompt: item.kana, answer: item.meaning_id, kind: 'kana' as const, mode };
-    if (mode === 'kana-romaji') return { prompt: item.kana, answer: item.romaji, kind: 'kana' as const, mode };
-    return { prompt: item.meaning_id, answer: item.kana, alt: item.romaji, kind: 'kana' as const, mode, inputKana: true, inputScript: item.script_type };
+    if (mode === 'kana-meaning') return { prompt: item.kana, answer: item.meaning_id, kind: 'kana' as const, mode, vocabId: item.id };
+    if (mode === 'kana-romaji') return { prompt: item.kana, answer: item.romaji, kind: 'kana' as const, mode, vocabId: item.id };
+    return { prompt: item.meaning_id, answer: item.kana, alt: item.romaji, kind: 'kana' as const, mode, inputKana: true, inputScript: item.script_type, vocabId: item.id };
   });
 }
 
