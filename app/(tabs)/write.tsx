@@ -17,6 +17,7 @@ export default function WriteScreen() {
   const [groupLabel, setGroupLabel] = useState('Semua');
   const [guided, setGuided] = useState(true);
   const [stepIndex, setStepIndex] = useState(0);
+  const [glyphIndex, setGlyphIndex] = useState(0);
   const [strokes, setStrokes] = useState<{ path: string; fill?: boolean }[]>([]);
   const [draft, setDraft] = useState('');
   const [message, setMessage] = useState('Ikuti stroke terang. Titik hijau = mulai, merah = akhir.');
@@ -31,7 +32,8 @@ export default function WriteScreen() {
   const allChars = script === 'hiragana' ? hiraganaItems : katakanaItems;
   const chars = groupLabel === 'Semua' ? allChars : allChars.filter((item) => item.group === groupLabel);
   const item = chars[index] ?? chars[0];
-  const char = item.kana;
+  const glyphs = [...item.kana];
+  const char = glyphs[glyphIndex] ?? item.kana;
   const guide = guideForKana(char) ?? strokeGuides[baseKana(char)];
   const step = guide?.[stepIndex];
   const canGuide = guided && !!guide;
@@ -96,6 +98,12 @@ export default function WriteScreen() {
       Animated.timing(anim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => {
         setSnap(null);
         setStrokes((current) => [...current, ...done]);
+        if (stepIndex + 1 >= guide.length && glyphIndex + 1 < glyphs.length) {
+          setGlyphIndex((current) => current + 1);
+          setStepIndex(0);
+          setMessage(`Lanjut bagian ${glyphs[glyphIndex + 1]}.`);
+          return;
+        }
         if (stepIndex + 1 >= guide.length) setMessage('Mantap, bentuknya masuk. Bisa lanjut huruf berikutnya.');
         else setMessage(guide[stepIndex + 1].hint);
         setStepIndex((current) => Math.min(current + 1, guide.length));
@@ -109,6 +117,7 @@ export default function WriteScreen() {
   function resetCanvas() {
     setStrokes([]);
     setStepIndex(0);
+    setGlyphIndex(0);
     setDraft('');
     draftRef.current = '';
     pointsRef.current = [];
@@ -119,6 +128,7 @@ export default function WriteScreen() {
     setIndex((current) => (current + delta + chars.length) % chars.length);
     setStrokes([]);
     setStepIndex(0);
+    setGlyphIndex(0);
     setDraft('');
     draftRef.current = '';
     pointsRef.current = [];
@@ -130,6 +140,7 @@ export default function WriteScreen() {
     setIndex(0);
     setStrokes([]);
     setStepIndex(0);
+    setGlyphIndex(0);
     setDraft('');
     draftRef.current = '';
     pointsRef.current = [];
@@ -157,8 +168,8 @@ export default function WriteScreen() {
       </ScrollView>
 
       <View style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]}> 
-        <Text style={[styles.counter, { color: t.sub, fontFamily: t.font }]}>{index + 1} / {chars.length}{guide ? ` · stroke ${Math.min(stepIndex + 1, guide.length)} / ${guide.length}` : ' · free'}</Text>
-        <Text style={[styles.target, { color: t.text, fontFamily: t.font }]}>{char}</Text>
+        <Text style={[styles.counter, { color: t.sub, fontFamily: t.font }]}>{index + 1} / {chars.length}{glyphs.length > 1 ? ` · bagian ${glyphIndex + 1} / ${glyphs.length}` : ''}{guide ? ` · stroke ${Math.min(stepIndex + 1, guide.length)} / ${guide.length}` : ' · free'}</Text>
+        <Text style={[styles.target, { color: t.text, fontFamily: t.font }]}>{item.kana}</Text>
         <Text style={[styles.romaji, { color: t.primary, fontFamily: t.font }]}>{item.romaji}</Text>
         <Text style={[styles.message, { color: t.sub, fontFamily: t.font }]}>{step?.hint ?? message}</Text>
       </View>

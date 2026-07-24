@@ -14,10 +14,7 @@ export function guideForKana(char: string) {
   const chars = [...char];
   const parts = chars.map((item) => strokeGuides[item]);
   if (parts.length !== 2 || parts.some((item) => !item)) return undefined;
-  return parts.flatMap((guide, index) => {
-    const box = index === 0 ? { x: 18, y: 26, width: 178, height: 238 } : { x: 184, y: 116, width: 112, height: 146 };
-    return fitGuide(guide!, box);
-  });
+  return undefined;
 }
 
 export function judgeStroke(points: Point[], step: StrokeStep) {
@@ -33,43 +30,6 @@ export function judgeStroke(points: Point[], step: StrokeStep) {
   const directionOk = directionSimilarity(points, intendedPath) > 0.52;
   const shapeOk = shapeDistance(points, intendedPath) < 52;
   return startOk && endOk && lengthOk && directionOk && shapeOk;
-}
-
-function fitGuide(guide: StrokeStep[], box: { x: number; y: number; width: number; height: number }) {
-  const bounds = guideBounds(guide);
-  const scale = Math.min(box.width / (bounds.maxX - bounds.minX || 1), box.height / (bounds.maxY - bounds.minY || 1));
-  const dx = box.x + (box.width - (bounds.maxX - bounds.minX) * scale) / 2 - bounds.minX * scale;
-  const dy = box.y + (box.height - (bounds.maxY - bounds.minY) * scale) / 2 - bounds.minY * scale;
-  return guide.map((step) => transformStep(step, scale, dx, dy));
-}
-
-function guideBounds(guide: StrokeStep[]) {
-  const nums = guide.flatMap((step) => [step.path, ...(step.fillPaths ?? [])].flatMap((path) => [...path.matchAll(/-?\d+(?:\.\d+)?/g)].map((m) => Number(m[0]))));
-  const xs = nums.filter((_, i) => i % 2 === 0);
-  const ys = nums.filter((_, i) => i % 2 === 1);
-  return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
-}
-
-function transformStep(step: StrokeStep, scale: number, dx: number, dy: number): StrokeStep {
-  const point = (p: Point) => ({ x: p.x * scale + dx, y: p.y * scale + dy });
-  return {
-    ...step,
-    path: transformPath(step.path, scale, dx, dy),
-    fillPaths: step.fillPaths?.map((path) => transformPath(path, scale, dx, dy)),
-    points: step.points?.map(point),
-    start: point(step.start),
-    end: point(step.end)
-  };
-}
-
-function transformPath(path: string, scale: number, dx: number, dy: number) {
-  let index = 0;
-  return path.replace(/-?\d+(?:\.\d+)?/g, (value) => {
-    const n = Number(value);
-    const next = index % 2 === 0 ? n * scale + dx : n * scale + dy;
-    index += 1;
-    return Number(next.toFixed(1)).toString();
-  });
 }
 
 function parsePathPoints(path: string) {
