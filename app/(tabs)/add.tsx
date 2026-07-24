@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { addVocab, initDb } from '../../src/db';
+import { addVocab, initDb, listGroups } from '../../src/db';
 import { romajiToKana } from '../../src/kana';
 import { useTheme } from '../../src/theme';
 import type { JlptLevel, ScriptType } from '../../src/types';
@@ -15,6 +16,12 @@ export default function AddScreen() {
   const [jlpt, setJlpt] = useState<JlptLevel>('N5');
   const [script, setScript] = useState<ScriptType>('hiragana');
   const [error, setError] = useState('');
+  const [groups, setGroups] = useState<string[]>([]);
+
+  useFocusEffect(useCallback(() => {
+    initDb();
+    setGroups(listGroups());
+  }, []));
 
   function changeKana(value: string) {
     setKana(value);
@@ -37,6 +44,7 @@ export default function AddScreen() {
       return;
     }
     addVocab({ kana, romaji, meaning_id: meaning, category, jlpt_level: jlpt, script_type: script, group });
+    setGroups(listGroups());
     setKana(''); setRomaji(''); setMeaning(''); setCategory('uncategorized'); setGroup(''); setJlpt('N5'); setScript('hiragana'); setError('');
     Alert.alert('Tersimpan', 'Kotoba masuk ke database offline.');
   }
@@ -50,6 +58,10 @@ export default function AddScreen() {
       <Field label="Arti Indonesia" value={meaning} onChangeText={setMeaning} placeholder="selamat pagi" />
       <Field label="Kategori" value={category} onChangeText={setCategory} placeholder="greeting" />
       <Field label="Group/Bab" value={group} onChangeText={setGroup} placeholder="Bab 1 Minna" />
+      {groups.length > 0 && <>
+        <Text style={[styles.hint, { color: t.sub, fontFamily: t.font }]}>Pilih bab lama, atau ketik bab baru di atas.</Text>
+        <View style={styles.row}>{groups.map((name) => <Chip key={name} label={name} active={group.trim() === name} onPress={() => setGroup(name)} />)}</View>
+      </>}
       <Text style={[styles.label, { color: t.label, fontFamily: t.font }]}>Script</Text>
       <View style={styles.row}>{(['hiragana', 'katakana'] as const).map((v) => <Chip key={v} label={v} active={script === v} onPress={() => changeScript(v)} />)}</View>
       <Text style={[styles.label, { color: t.label, fontFamily: t.font }]}>JLPT</Text>
@@ -81,5 +93,6 @@ const styles = StyleSheet.create({
   chipTextActive: { color: 'white', fontWeight: '700' },
   button: { backgroundColor: '#2563eb', padding: 14, borderRadius: 14, marginTop: 20, alignItems: 'center' },
   buttonText: { color: 'white', fontWeight: '800', fontSize: 16 },
-  error: { backgroundColor: '#fee2e2', color: '#991b1b', padding: 10, borderRadius: 10 }
+  error: { backgroundColor: '#fee2e2', color: '#991b1b', padding: 10, borderRadius: 10 },
+  hint: { marginTop: 8, marginBottom: 4, color: '#64748b' }
 });
