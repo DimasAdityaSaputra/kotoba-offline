@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { initDb, listGroups, listVocab, markCorrect, recordProgress, saveQuizResult } from '../../src/db';
+import { initDb, listGroups, listVocab, markCorrect, saveQuizResult } from '../../src/db';
 import { romajiToKana } from '../../src/kana';
 import { normalizeAnswer, numberToJapanese } from '../../src/numberQuiz';
 import { isQuizAnswerCorrect } from '../../src/quizCheck';
@@ -90,10 +90,7 @@ export default function QuizScreen() {
   function submit() {
     if (!current) return;
     const correct = isQuizAnswerCorrect(answer, current.answer, current.alt, current.inputKana, current.inputScript);
-    if (correct) {
-      if (current.vocabId) markCorrect(current.vocabId);
-      recordProgress(current.vocabId);
-    }
+    if (correct && current.vocabId) markCorrect(current.vocabId);
     const nextWrong = correct ? wrong : [...wrong, { ...current, given: answer }];
     if (index + 1 >= questions.length) {
       setWrong(nextWrong);

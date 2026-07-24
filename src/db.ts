@@ -38,7 +38,7 @@ export function initDb() {
     );
     CREATE TABLE IF NOT EXISTS progress_event (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      vocab_id INTEGER,
+      vocab_id INTEGER NOT NULL,
       created_at TEXT NOT NULL
     );
   `);
@@ -100,11 +100,10 @@ export function setReviewStatus(id: number, status: VocabItem['review_status']) 
 
 export function markCorrect(id: number) {
   const now = new Date().toISOString();
-  db.runSync(`UPDATE vocab SET review_status = 'known', correct_count = correct_count + 1, last_correct_at = ?, updated_at = ? WHERE id = ?`, now, now, id);
-}
-
-export function recordProgress(vocabId?: number) {
-  db.runSync('INSERT INTO progress_event (vocab_id, created_at) VALUES (?, ?)', vocabId ?? null, new Date().toISOString());
+  db.withTransactionSync(() => {
+    db.runSync(`UPDATE vocab SET review_status = 'known', correct_count = correct_count + 1, last_correct_at = ?, updated_at = ? WHERE id = ?`, now, now, id);
+    db.runSync('INSERT INTO progress_event (vocab_id, created_at) VALUES (?, ?)', id, now);
+  });
 }
 
 export function deleteVocab(id: number) {
@@ -209,12 +208,12 @@ export function saveProfileValue(key: string, value: string) {
   db.runSync('INSERT OR REPLACE INTO profile (key, value) VALUES (?, ?)', key, value);
 }
 
-export type BackupData = { version: 1; exportedAt: string; profile: Record<string, string>; userVocab: VocabItem[]; quizResults: { modes: string; score: number; total: number; created_at: string }[]; progressEvents?: { vocab_id: number | null; created_at: string }[]; };
+export type BackupData = { version: 1; exportedAt: string; profile: Record<string, string>; userVocab: VocabItem[]; quizResults: { modes: string; score: number; total: number; created_at: string }[]; progressEvents?: { vocab_id: number; created_at: string }[]; };
 
 export function createBackup(): BackupData {
   initDb();
   const profileRows = db.getAllSync<{ key: string; value: string }>('SELECT key, value FROM profile');
-  return { version: 1, exportedAt: new Date().toISOString(), profile: Object.fromEntries(profileRows.map((row) => [row.key, row.value])), userVocab: db.getAllSync<VocabItem>(`SELECT * FROM vocab WHERE source = 'user' ORDER BY id`), quizResults: db.getAllSync<{ modes: string; score: number; total: number; created_at: string }>('SELECT modes, score, total, created_at FROM quiz_result ORDER BY id'), progressEvents: db.getAllSync<{ vocab_id: number | null; created_at: string }>('SELECT vocab_id, created_at FROM progress_event ORDER BY id') };
+  return { version: 1, exportedAt: new Date().toISOString(), profile: Object.fromEntries(profileRows.map((row) => [row.key, row.value])), userVocab: db.getAllSync<VocabItem>(`SELECT * FROM vocab WHERE source = 'user' ORDER BY id`), quizResults: db.getAllSync<{ modes: string; score: number; total: number; created_at: string }>('SELECT modes, score, total, created_at FROM quiz_result ORDER BY id'), progressEvents: db.getAllSync<{ vocab_id: number; created_at: string }>('SELECT vocab_id, created_at FROM progress_event ORDER BY id') };
 }
 
 export function restoreBackup(data: BackupData) {
