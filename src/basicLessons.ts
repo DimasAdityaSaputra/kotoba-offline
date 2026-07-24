@@ -139,6 +139,44 @@ export const BASIC_LESSONS: BasicLesson[] = [
   }
 ];
 
+
+export type BasicSentence = {
+  category: string;
+  pattern: string;
+  polite: string;
+  casual: string;
+  meaning: string;
+  note: string;
+};
+
+export const BASIC_SENTENCES: BasicSentence[] = [
+  { category: 'Kata benda positif', pattern: 'A は B です', polite: 'わたしはがくせいです。', casual: 'わたしはがくせい。', meaning: 'Saya siswa.', note: 'です = sopan. Casual sering buang です.' },
+  { category: 'Kata benda negatif', pattern: 'A は B じゃないです', polite: 'わたしはがくせいじゃないです。', casual: 'わたしはがくせいじゃない。', meaning: 'Saya bukan siswa.', note: 'じゃないです umum. ではありません lebih formal.' },
+  { category: 'Kata benda negatif formal', pattern: 'A は B ではありません', polite: 'わたしはいしゃではありません。', casual: 'わたしはいしゃじゃない。', meaning: 'Saya bukan dokter.', note: 'ではありません cocok tulisan/presentasi.' },
+  { category: 'Iya / bukan', pattern: 'はい / いいえ', polite: 'はい、そうです。', casual: 'うん、そう。', meaning: 'Ya, benar.', note: 'はい sopan. うん casual.' },
+  { category: 'Bukan / salah', pattern: 'いいえ / ちがいます', polite: 'いいえ、ちがいます。', casual: 'ううん、ちがう。', meaning: 'Tidak, bukan.', note: 'ちがいます = “beda/salah/bukan itu”.' },
+  { category: 'Ada benda', pattern: 'もの が あります', polite: 'つくえがあります。', casual: 'つくえがある。', meaning: 'Ada meja.', note: 'あります buat benda/tumbuhan/hal abstrak.' },
+  { category: 'Tidak ada benda', pattern: 'もの が ありません', polite: 'おかねがありません。', casual: 'おかねがない。', meaning: 'Tidak ada uang.', note: 'ありません sopan. ない casual.' },
+  { category: 'Ada makhluk hidup', pattern: 'ひと/どうぶつ が います', polite: 'ねこがいます。', casual: 'ねこがいる。', meaning: 'Ada kucing.', note: 'います buat manusia/hewan.' },
+  { category: 'Tidak ada makhluk hidup', pattern: 'ひと/どうぶつ が いません', polite: 'せんせいがいません。', casual: 'せんせいがいない。', meaning: 'Guru tidak ada.', note: 'いません sopan. いない casual.' },
+  { category: 'Kata sifat い positif', pattern: 'A は 〜いです', polite: 'このほんはおもしろいです。', casual: 'このほんはおもしろい。', meaning: 'Buku ini menarik.', note: 'Kata sifat い langsung + です untuk sopan.' },
+  { category: 'Kata sifat い negatif', pattern: '〜くないです', polite: 'このほんはおもしろくないです。', casual: 'このほんはおもしろくない。', meaning: 'Buku ini tidak menarik.', note: 'Akhir い berubah jadi くない.' },
+  { category: 'Kata sifat な positif', pattern: 'A は 〜です', polite: 'このまちはしずかです。', casual: 'このまちはしずかだ。', meaning: 'Kota ini tenang.', note: 'Casual kata sifat な bisa pakai だ.' },
+  { category: 'Kata sifat な negatif', pattern: '〜じゃないです', polite: 'このまちはしずかじゃないです。', casual: 'このまちはしずかじゃない。', meaning: 'Kota ini tidak tenang.', note: 'Pola negatif mirip kata benda.' },
+  { category: 'Kata kerja positif', pattern: '〜ます', polite: 'みずをのみます。', casual: 'みずをのむ。', meaning: 'Saya minum air.', note: 'ます sopan. Bentuk kamus/casual: のむ.' },
+  { category: 'Kata kerja negatif', pattern: '〜ません', polite: 'みずをのみません。', casual: 'みずをのまない。', meaning: 'Saya tidak minum air.', note: 'ません sopan. Casual negatif beda bentuk: のまない.' },
+  { category: 'Pergi positif', pattern: '〜にいきます', polite: 'がっこうにいきます。', casual: 'がっこうにいく。', meaning: 'Saya pergi ke sekolah.', note: 'Tujuan pakai に.' },
+  { category: 'Pergi negatif', pattern: '〜にいきません', polite: 'がっこうにいきません。', casual: 'がっこうにいかない。', meaning: 'Saya tidak pergi ke sekolah.', note: 'いきません sopan. いかない casual.' },
+  { category: 'Melakukan positif', pattern: '〜をします', polite: 'べんきょうをします。', casual: 'べんきょうをする。', meaning: 'Saya belajar.', note: 'します/する = melakukan.' },
+  { category: 'Melakukan negatif', pattern: '〜をしません', polite: 'べんきょうをしません。', casual: 'べんきょうをしない。', meaning: 'Saya tidak belajar.', note: 'しません sopan. しない casual.' },
+  { category: 'Suka positif', pattern: 'A がすきです', polite: 'にほんごがすきです。', casual: 'にほんごがすき。', meaning: 'Saya suka bahasa Jepang.', note: 'すき biasanya pakai が.' },
+  { category: 'Suka negatif', pattern: 'A がすきじゃないです', polite: 'からいものがすきじゃないです。', casual: 'からいものがすきじゃない。', meaning: 'Saya tidak suka makanan pedas.', note: 'Bukan をすき. Pakai が.' },
+  { category: 'Mau positif', pattern: '〜たいです', polite: 'にほんにいきたいです。', casual: 'にほんにいきたい。', meaning: 'Saya ingin pergi ke Jepang.', note: 'たい nempel ke akar kata kerja.' },
+  { category: 'Mau negatif', pattern: '〜たくないです', polite: 'きょうはいきたくないです。', casual: 'きょうはいきたくない。', meaning: 'Hari ini saya tidak ingin pergi.', note: 'たい negatif jadi たくない.' },
+  { category: 'Bisa positif', pattern: '〜できます', polite: 'ひらがなができます。', casual: 'ひらがなができる。', meaning: 'Saya bisa hiragana.', note: 'できる = bisa/mampu.' },
+  { category: 'Bisa negatif', pattern: '〜できません', polite: 'かんじができません。', casual: 'かんじができない。', meaning: 'Saya tidak bisa kanji.', note: 'Di sini かんじ dipakai sebagai istilah; boleh kenal kata ini dulu.' }
+];
+
 export const BASIC_DRILLS: BasicDrill[] = [
   { prompt: 'みず＿のみます。', answer: 'を', reason: 'みず adalah objek yang diminum.' },
   { prompt: 'がっこう＿いきます。', answer: 'に', reason: 'がっこう adalah tujuan pergi.' },

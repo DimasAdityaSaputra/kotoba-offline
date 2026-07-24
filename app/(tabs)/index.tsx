@@ -4,7 +4,7 @@ import { Alert, Animated, FlatList, Modal, Pressable, ScrollView, StyleSheet, Te
 import { deleteVocab, initDb, listVocab, updateVocab } from '../../src/db';
 import { romajiToKana } from '../../src/kana';
 import { kanaGroups } from '../../src/kanaGroups';
-import { BASIC_DRILLS, BASIC_FLOW, BASIC_LESSONS, BASIC_PATTERNS } from '../../src/basicLessons';
+import { BASIC_DRILLS, BASIC_FLOW, BASIC_LESSONS, BASIC_PATTERNS, BASIC_SENTENCES } from '../../src/basicLessons';
 import { numberToJapanese } from '../../src/numberQuiz';
 import { speakJapanese } from '../../src/speech';
 import { useTheme } from '../../src/theme';
@@ -192,6 +192,16 @@ function BasicReference() {
       <ExampleRow label="Contoh" text={pattern.example} good />
       <Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{pattern.meaning}</Text>
       <Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{pattern.note}</Text>
+    </View>)}
+    <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Positif & negatif</Text>
+    <Text style={[styles.refNote, { color: t.sub, fontFamily: t.font }]}>Sopan dipakai ke orang baru/guru/kerja. Casual dipakai teman dekat. Jangan casual ke orang random kalau nggak mau keliatan songong.</Text>
+    {BASIC_SENTENCES.map((row) => <View key={`${row.category}-${row.polite}`} style={[styles.lessonCard, { backgroundColor: t.card, borderColor: t.border }]}>
+      <Text style={[styles.lessonSubtitle, { color: t.primary, fontFamily: t.font }]}>{row.category}</Text>
+      <Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{row.pattern}</Text>
+      <ExampleRow label="Sopan" text={row.polite} good />
+      <ExampleRow label="Casual" text={row.casual} good />
+      <Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{row.meaning}</Text>
+      <Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{row.note}</Text>
     </View>)}
     <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Partikel inti</Text>
     <Text style={[styles.refNote, { color: t.sub, fontFamily: t.font }]}>Partikel itu penanda fungsi kata. Hafal fungsi, bukan terjemahan mentah.</Text>
