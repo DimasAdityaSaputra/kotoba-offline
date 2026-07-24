@@ -4,7 +4,7 @@ import { Alert, Animated, FlatList, Modal, Pressable, ScrollView, StyleSheet, Te
 import { deleteVocab, initDb, listVocab, updateVocab } from '../../src/db';
 import { romajiToKana } from '../../src/kana';
 import { kanaGroups } from '../../src/kanaGroups';
-import { BASIC_DRILLS, BASIC_FLOW, BASIC_LESSONS, BASIC_PATTERNS, BASIC_SENTENCES } from '../../src/basicLessons';
+import { BASIC_DRILLS, BASIC_FLOW, BASIC_LESSONS, BASIC_PATTERNS, BASIC_PHRASES, BASIC_SENTENCES } from '../../src/basicLessons';
 import { numberToJapanese } from '../../src/numberQuiz';
 import { speakJapanese } from '../../src/speech';
 import { useTheme } from '../../src/theme';
@@ -175,7 +175,7 @@ const NUMBER_BREAKDOWNS = [
 ];
 
 
-type BasicSection = 'flow' | 'patterns' | 'sentences' | 'particles' | 'drills';
+type BasicSection = 'flow' | 'patterns' | 'sentences' | 'particles' | 'phrases' | 'drills';
 
 function BasicReference() {
   const t = useTheme();
@@ -188,6 +188,7 @@ function BasicReference() {
       <Chip label="Pola" active={section === 'patterns'} onPress={() => setSection('patterns')} />
       <Chip label="+ / -" active={section === 'sentences'} onPress={() => setSection('sentences')} />
       <Chip label="Partikel" active={section === 'particles'} onPress={() => setSection('particles')} />
+      <Chip label="Harian" active={section === 'phrases'} onPress={() => setSection('phrases')} />
       <Chip label="Latihan" active={section === 'drills'} onPress={() => setSection('drills')} />
     </ScrollView>
 
@@ -235,6 +236,17 @@ function BasicReference() {
         <ExampleRow label="Salah" text={lesson.wrong} />
         <Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{lesson.meaning}</Text>
         <Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{lesson.note}</Text>
+      </View>)}
+    </>}
+
+    {section === 'phrases' && <>
+      <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Frasa harian</Text>
+      <Text style={[styles.refNote, { color: t.sub, fontFamily: t.font }]}>Kata tanya, waktu, lokasi, dan survival phrase. Ini yang kepake duluan di dunia nyata.</Text>
+      {BASIC_PHRASES.map((phrase) => <View key={`${phrase.group}-${phrase.kana}`} style={[styles.lessonCard, { backgroundColor: t.card, borderColor: t.border }]}>
+        <Text style={[styles.lessonSubtitle, { color: t.primary, fontFamily: t.font }]}>{phrase.group}</Text>
+        <ExampleRow label="Kana" text={phrase.kana} good />
+        <Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{phrase.meaning}</Text>
+        <Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{phrase.use}</Text>
       </View>)}
     </>}
 

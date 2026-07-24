@@ -177,6 +177,37 @@ export const BASIC_SENTENCES: BasicSentence[] = [
   { category: 'Bisa negatif', pattern: '〜できません', polite: 'かんじができません。', casual: 'かんじができない。', meaning: 'Saya tidak bisa kanji.', note: 'Di sini かんじ dipakai sebagai istilah; boleh kenal kata ini dulu.' }
 ];
 
+
+export type BasicPhrase = {
+  group: string;
+  kana: string;
+  meaning: string;
+  use: string;
+};
+
+export const BASIC_PHRASES: BasicPhrase[] = [
+  { group: 'Tanya', kana: 'なに', meaning: 'apa', use: 'Tanya benda/hal.' },
+  { group: 'Tanya', kana: 'だれ', meaning: 'siapa', use: 'Tanya orang.' },
+  { group: 'Tanya', kana: 'どこ', meaning: 'di mana / ke mana', use: 'Tanya lokasi atau tujuan.' },
+  { group: 'Tanya', kana: 'いつ', meaning: 'kapan', use: 'Tanya waktu.' },
+  { group: 'Tanya', kana: 'いくら', meaning: 'berapa harga', use: 'Tanya harga.' },
+  { group: 'Tanya', kana: 'どうして', meaning: 'kenapa', use: 'Tanya alasan.' },
+  { group: 'Waktu', kana: 'きょう', meaning: 'hari ini', use: 'Pakai untuk ngomong rencana hari ini.' },
+  { group: 'Waktu', kana: 'あした', meaning: 'besok', use: 'Pakai untuk rencana besok.' },
+  { group: 'Waktu', kana: 'きのう', meaning: 'kemarin', use: 'Pakai untuk cerita masa lalu.' },
+  { group: 'Waktu', kana: 'いま', meaning: 'sekarang', use: 'Pakai untuk kondisi saat ini.' },
+  { group: 'Waktu', kana: 'あさ', meaning: 'pagi', use: 'Waktu pagi.' },
+  { group: 'Waktu', kana: 'よる', meaning: 'malam', use: 'Waktu malam.' },
+  { group: 'Lokasi', kana: 'ここ', meaning: 'di sini', use: 'Lokasi dekat pembicara.' },
+  { group: 'Lokasi', kana: 'そこ', meaning: 'di situ', use: 'Lokasi dekat lawan bicara.' },
+  { group: 'Lokasi', kana: 'あそこ', meaning: 'di sana', use: 'Lokasi jauh dari keduanya.' },
+  { group: 'Survival', kana: 'すみません', meaning: 'maaf / permisi', use: 'Manggil orang, minta maaf ringan, buka percakapan.' },
+  { group: 'Survival', kana: 'ありがとう', meaning: 'terima kasih', use: 'Kasual. Sopan: ありがとうございます.' },
+  { group: 'Survival', kana: 'おねがいします', meaning: 'tolong / mohon', use: 'Saat minta bantuan atau pesan sesuatu.' },
+  { group: 'Survival', kana: 'わかりません', meaning: 'saya tidak mengerti', use: 'Kalau belum paham. Aman dan sopan.' },
+  { group: 'Survival', kana: 'もういちど', meaning: 'sekali lagi', use: 'Minta diulang. Tambah おねがいします biar sopan.' }
+];
+
 export const BASIC_DRILLS: BasicDrill[] = [
   { prompt: 'みず＿のみます。', answer: 'を', reason: 'みず adalah objek yang diminum.' },
   { prompt: 'がっこう＿いきます。', answer: 'に', reason: 'がっこう adalah tujuan pergi.' },
