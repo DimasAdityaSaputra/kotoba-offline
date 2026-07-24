@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View, type View as ViewType } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { kanaGroups, kanaItems } from '../../src/kanaGroups';
-import { judgeStroke, strokeGuides, type Point } from '../../src/strokeGuide';
+import { guideForKana, judgeStroke, strokeGuides, type Point } from '../../src/strokeGuide';
 import { useTheme } from '../../src/theme';
 
 const hiraganaItems = kanaItems('hiragana');
@@ -21,6 +21,7 @@ export default function WriteScreen() {
   const [draft, setDraft] = useState('');
   const [message, setMessage] = useState('Ikuti stroke terang. Titik hijau = mulai, merah = akhir.');
   const [showAnimation, setShowAnimation] = useState(true);
+  const [snap, setSnap] = useState<{ from: string; to: { path: string; fill?: boolean }[] } | null>(null);
   const anim = useRef(new Animated.Value(0)).current;
   const draftRef = useRef('');
   const pointsRef = useRef<Point[]>([]);
@@ -31,12 +32,14 @@ export default function WriteScreen() {
   const chars = groupLabel === 'Semua' ? allChars : allChars.filter((item) => item.group === groupLabel);
   const item = chars[index] ?? chars[0];
   const char = item.kana;
-  const guide = strokeGuides[char] ?? strokeGuides[baseKana(char)];
+  const guide = guideForKana(char) ?? strokeGuides[baseKana(char)];
   const step = guide?.[stepIndex];
   const canGuide = guided && !!guide;
   const animInput = step?.points?.map((_, i) => i / Math.max(1, step.points!.length - 1)) ?? [0, 1];
   const animX = step?.points?.length ? anim.interpolate({ inputRange: animInput, outputRange: step.points.map((point) => point.x) }) : undefined;
   const animY = step?.points?.length ? anim.interpolate({ inputRange: animInput, outputRange: step.points.map((point) => point.y) }) : undefined;
+  const snapOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+  const correctOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
 
   useEffect(() => { runAnimation(); }, [char, stepIndex, showAnimation]);
 
@@ -87,11 +90,16 @@ export default function WriteScreen() {
         return;
       }
       const done = step.fillPaths?.length ? step.fillPaths.map((path) => ({ path, fill: true })) : [{ path: step.path }];
-      const nextStrokes = [...strokes, ...done];
-      setStrokes(nextStrokes);
-      if (stepIndex + 1 >= guide.length) setMessage('Mantap, bentuknya masuk. Bisa lanjut huruf berikutnya.');
-      else setMessage(guide[stepIndex + 1].hint);
-      setStepIndex((current) => Math.min(current + 1, guide.length));
+      setSnap({ from: path, to: done });
+      anim.stopAnimation();
+      anim.setValue(0);
+      Animated.timing(anim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => {
+        setSnap(null);
+        setStrokes((current) => [...current, ...done]);
+        if (stepIndex + 1 >= guide.length) setMessage('Mantap, bentuknya masuk. Bisa lanjut huruf berikutnya.');
+        else setMessage(guide[stepIndex + 1].hint);
+        setStepIndex((current) => Math.min(current + 1, guide.length));
+      });
       return;
     }
 
@@ -167,9 +175,11 @@ export default function WriteScreen() {
             {step && <Path d={`M ${step.start.x} ${step.start.y} L ${step.start.x + 0.1} ${step.start.y + 0.1}`} stroke="#22c55e" strokeWidth={14} strokeLinecap="round" />}
             {step && <Path d={`M ${step.end.x} ${step.end.y} L ${step.end.x + 0.1} ${step.end.y + 0.1}`} stroke="#ef4444" strokeWidth={14} strokeLinecap="round" />}
             {strokes.map((item, i) => item.fill ? <Path key={i} d={item.path} fill={t.primary} opacity={0.95} /> : <Path key={i} d={item.path} stroke={t.primary} strokeWidth={18} strokeLinecap="round" strokeLinejoin="round" fill="none" />)}
-            {!!draft && <Path d={draft} stroke={t.primary} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.8} />}
+            {snap?.to.map((item, i) => item.fill ? <AnimatedPath key={`snap-to-${i}`} d={item.path} fill={t.primary} opacity={correctOpacity} /> : <AnimatedPath key={`snap-to-${i}`} d={item.path} stroke={t.primary} strokeWidth={18} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={correctOpacity} />)}
+            {snap && <AnimatedPath d={snap.from} stroke={t.primary} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={snapOpacity} />}
+            {!!draft && !snap && <Path d={draft} stroke={t.primary} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.8} />}
+            {showAnimation && animX && animY && <AnimatedCircle cx={animX} cy={animY} r={7} fill={t.primary} />}
           </Svg>
-          {animX && animY && <Animated.View style={[styles.animDot, { backgroundColor: t.primary, transform: [{ translateX: animX }, { translateY: animY }] }]} />}
         </View>
       </View>
 
@@ -219,6 +229,9 @@ function touchPoint(x: number, y: number, size: { width: number; height: number 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   const t = useTheme();

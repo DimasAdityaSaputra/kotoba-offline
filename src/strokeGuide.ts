@@ -8,6 +8,15 @@ const manualStrokeGuides: Record<string, StrokeStep[]> = {};
 
 export const strokeGuides: Record<string, StrokeStep[]> = { ...animCjkStrokeGuides, ...manualStrokeGuides };
 
+export function guideForKana(char: string) {
+  const direct = strokeGuides[char];
+  if (direct) return direct;
+  const parts = [...char].map((item) => strokeGuides[item]);
+  if (parts.length < 2 || parts.some((item) => !item)) return undefined;
+  const width = 320 / parts.length;
+  return parts.flatMap((guide, index) => guide!.map((step) => transformStep(step, 0.58, 0.72, index * width + 8, 44)));
+}
+
 export function judgeStroke(points: Point[], step: StrokeStep) {
   if (points.length < 4) return false;
   const first = points[0];
@@ -21,6 +30,28 @@ export function judgeStroke(points: Point[], step: StrokeStep) {
   const directionOk = directionSimilarity(points, intendedPath) > 0.52;
   const shapeOk = shapeDistance(points, intendedPath) < 52;
   return startOk && endOk && lengthOk && directionOk && shapeOk;
+}
+
+function transformStep(step: StrokeStep, scaleX: number, scaleY: number, dx: number, dy: number): StrokeStep {
+  const point = (p: Point) => ({ x: p.x * scaleX + dx, y: p.y * scaleY + dy });
+  return {
+    ...step,
+    path: transformPath(step.path, scaleX, scaleY, dx, dy),
+    fillPaths: step.fillPaths?.map((path) => transformPath(path, scaleX, scaleY, dx, dy)),
+    points: step.points?.map(point),
+    start: point(step.start),
+    end: point(step.end)
+  };
+}
+
+function transformPath(path: string, scaleX: number, scaleY: number, dx: number, dy: number) {
+  let index = 0;
+  return path.replace(/-?\d+(?:\.\d+)?/g, (value) => {
+    const n = Number(value);
+    const next = index % 2 === 0 ? n * scaleX + dx : n * scaleY + dy;
+    index += 1;
+    return Number(next.toFixed(1)).toString();
+  });
 }
 
 function parsePathPoints(path: string) {
