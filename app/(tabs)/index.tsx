@@ -4,6 +4,7 @@ import { Alert, Animated, FlatList, Modal, Pressable, ScrollView, StyleSheet, Te
 import { deleteVocab, initDb, listVocab, updateVocab } from '../../src/db';
 import { romajiToKana } from '../../src/kana';
 import { kanaGroups } from '../../src/kanaGroups';
+import { BASIC_LESSONS } from '../../src/basicLessons';
 import { numberToJapanese } from '../../src/numberQuiz';
 import { speakJapanese } from '../../src/speech';
 import { useTheme } from '../../src/theme';
@@ -17,7 +18,7 @@ export default function KotobaScreen() {
   const [filters, setFilters] = useState<VocabFilters>(initialFilters);
   const [items, setItems] = useState<VocabItem[]>([]);
   const [editing, setEditing] = useState<VocabItem | null>(null);
-  const [learnMode, setLearnMode] = useState<'kotoba' | 'number' | 'letter'>('kotoba');
+  const [learnMode, setLearnMode] = useState<'kotoba' | 'number' | 'letter' | 'basic'>('kotoba');
   const [menuOpen, setMenuOpen] = useState(false);
   const [form, setForm] = useState({ kana: '', romaji: '', meaning_id: '', category: '', group: '', jlpt_level: 'N5' as JlptLevel, script_type: 'hiragana' as ScriptType });
   const deferredQuery = useDeferredValue(filters.query);
@@ -110,6 +111,10 @@ export default function KotobaScreen() {
               ListEmptyComponent={<Text style={[styles.empty, { color: t.sub, fontFamily: t.font }]}>Kosakata kosong.</Text>}
             />
           </>}
+          {learnMode === 'basic' && <>
+            <MiniHeader title="Basic" onMenu={() => setMenuOpen(true)} />
+            <BasicReference />
+          </>}
           {learnMode === 'letter' && <>
             <MiniHeader title="Huruf" onMenu={() => setMenuOpen(true)} />
             <KanaReference onWrite={() => router.navigate('/write')} />
@@ -124,6 +129,7 @@ export default function KotobaScreen() {
         <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
           <View style={[styles.menuSheet, { backgroundColor: t.card, borderColor: t.border }]}>
             <MenuItem title="Kotoba" active={learnMode === 'kotoba'} onPress={() => { setLearnMode('kotoba'); setMenuOpen(false); }} />
+            <MenuItem title="Basic" active={learnMode === 'basic'} onPress={() => { setLearnMode('basic'); setMenuOpen(false); }} />
             <MenuItem title="Huruf" active={learnMode === 'letter'} onPress={() => { setLearnMode('letter'); setMenuOpen(false); }} />
             <MenuItem title="Nomor" active={learnMode === 'number'} onPress={() => { setLearnMode('number'); setMenuOpen(false); }} />
           </View>
@@ -167,6 +173,34 @@ const NUMBER_BREAKDOWNS = [
   ['1670', '1000 + 600 + 70', 'sen + roppyaku + nana juu', 'sen roppyaku nana juu'],
   ['1989', '1000 + 900 + 80 + 9', 'sen + kyuu hyaku + hachi juu + kyuu', 'sen kyuu hyaku hachi juu kyuu']
 ];
+
+
+function BasicReference() {
+  const t = useTheme();
+  return <ScrollView style={styles.referenceBox} contentContainerStyle={{ paddingBottom: 108 }}>
+    <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Basic Jepang</Text>
+    <Text style={[styles.refNote, { color: t.sub, fontFamily: t.font }]}>Partikel itu penanda fungsi kata. Bahasa Jepang pakai partikel buat nunjukin: ini topik, ini objek, ini tempat, ini tujuan. Hafal fungsi, bukan terjemahan mentah.</Text>
+    {BASIC_LESSONS.map((lesson) => <View key={lesson.title} style={[styles.lessonCard, { backgroundColor: t.card, borderColor: t.border }]}>
+      <View style={styles.lessonHead}>
+        <Text style={[styles.lessonParticle, { color: t.text, fontFamily: t.font }]}>{lesson.title}</Text>
+        <View style={{ flex: 1 }}><Text style={[styles.lessonSubtitle, { color: t.primary, fontFamily: t.font }]}>{lesson.subtitle}</Text><Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{lesson.use}</Text></View>
+      </View>
+      <ExampleRow label="Benar" text={lesson.right} good />
+      <ExampleRow label="Salah" text={lesson.wrong} />
+      <Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{lesson.meaning}</Text>
+      <Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{lesson.note}</Text>
+    </View>)}
+  </ScrollView>;
+}
+
+function ExampleRow({ label, text, good }: { label: string; text: string; good?: boolean }) {
+  const t = useTheme();
+  return <View style={[styles.exampleRow, { backgroundColor: t.card2 }]}>
+    <Text style={[styles.exampleLabel, { color: good ? '#16a34a' : t.danger, fontFamily: t.font }]}>{label}</Text>
+    <Text style={[styles.exampleText, { color: t.text, fontFamily: t.font }]}>{text}</Text>
+    <Pressable style={[styles.speakButton, { backgroundColor: t.card }]} onPress={() => speakJapanese(text)}><Text style={[styles.speakText, { color: t.primary }]}>▶</Text></Pressable>
+  </View>;
+}
 
 const NumberReference = memo(function NumberReference({ onQuiz }: { onQuiz: () => void }) {
   const t = useTheme();
@@ -305,6 +339,13 @@ const styles = StyleSheet.create({
   refTitle: { fontSize: 22, fontWeight: '900', marginBottom: 8 },
   refNote: { lineHeight: 20, marginBottom: 12 },
   ruleCard: { borderWidth: 1, borderRadius: 16, padding: 12, marginBottom: 12, gap: 6 },
+  lessonCard: { borderWidth: 1, borderRadius: 16, padding: 12, marginBottom: 10, gap: 8 },
+  lessonHead: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  lessonParticle: { width: 48, fontSize: 34, lineHeight: 42, fontWeight: '900', textAlign: 'center' },
+  lessonSubtitle: { fontSize: 15, fontWeight: '900', marginBottom: 4 },
+  exampleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, padding: 8 },
+  exampleLabel: { width: 42, fontSize: 12, fontWeight: '900' },
+  exampleText: { flex: 1, fontSize: 16, fontWeight: '900' },
   ruleHead: { fontSize: 16, fontWeight: '900', marginBottom: 2 },
   ruleText: { fontWeight: '800', lineHeight: 20 },
   breakdown: { marginBottom: 12 },
