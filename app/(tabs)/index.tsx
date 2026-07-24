@@ -84,12 +84,10 @@ export default function KotobaScreen() {
             </View>
             <View style={[styles.searchPanel, { backgroundColor: t.card, borderColor: t.border }]}>
               <TextInput placeholderTextColor={t.sub} style={[styles.searchInput, { backgroundColor: t.card2, color: t.text, fontFamily: t.font }]} placeholder="Cari..." value={filters.query} onChangeText={(query) => setFilters({ ...filters, query })} />
-              <View style={styles.row}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
                 {(['all', 'hiragana', 'katakana'] as const).map((value) => <Chip key={value} label={value} active={filters.script_type === value} onPress={() => setFilters({ ...filters, script_type: value })} />)}
-              </View>
-              <View style={styles.row}>
                 {(['all', 'N5', 'N4', 'uncategorized'] as const).map((value) => <Chip key={value} label={value} active={filters.jlpt_level === value} onPress={() => setFilters({ ...filters, jlpt_level: value })} />)}
-              </View>
+              </ScrollView>
             </View>
             <FlatList
               data={items}
@@ -102,12 +100,10 @@ export default function KotobaScreen() {
               renderItem={({ item }) => (
                 <Pressable style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]} onPress={() => openEdit(item)} onLongPress={() => remove(item)}>
                   <View style={styles.cardMain}>
-                    <View style={[styles.kanaBadge, { backgroundColor: t.card2 }]}><Text style={[styles.kana, { color: t.text, fontFamily: t.font }]}>{item.kana}</Text></View>
-                    <View style={styles.wordInfo}>
-                      <View style={styles.wordTop}><Text style={[styles.meaning, { color: t.text, fontFamily: t.font }]} numberOfLines={1}>{item.meaning_id}</Text><Pressable style={[styles.speakButton, { backgroundColor: t.card2 }]} onPress={() => speakJapanese(item.kana)}><Text style={[styles.speakText, { color: t.primary }]}>▶</Text></Pressable></View>
-                      <Text style={[styles.romaji, { color: t.primary, fontFamily: t.font }]} numberOfLines={1}>{item.romaji}</Text>
-                      <View style={styles.tagRow}><Pill text={item.script_type} /><Pill text={item.jlpt_level} /><Pill text={item.group || 'bab'} /></View>
-                    </View>
+                    <View style={styles.wordTop}><Text style={[styles.kana, { color: t.text, fontFamily: t.font }]}>{item.kana}</Text><Pressable style={[styles.speakButton, { backgroundColor: t.card2 }]} onPress={() => speakJapanese(item.kana)}><Text style={[styles.speakText, { color: t.primary }]}>▶</Text></Pressable></View>
+                    <Text style={[styles.meaning, { color: t.text, fontFamily: t.font }]} numberOfLines={1}>{item.meaning_id}</Text>
+                    <Text style={[styles.romaji, { color: t.primary, fontFamily: t.font }]} numberOfLines={1}>{item.romaji}</Text>
+                    <View style={styles.tagRow}><Pill text={item.script_type} /><Pill text={item.jlpt_level} /><Pill text={item.group || 'bab'} /></View>
                   </View>
                 </Pressable>
               )}
@@ -297,8 +293,8 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 12, fontWeight: '800', marginTop: 2 },
   title: { fontSize: 28, fontWeight: '800', marginBottom: 12, color: '#0f172a' },
   input: { backgroundColor: 'transparent', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
-  searchPanel: { borderWidth: 1, borderRadius: 22, padding: 12, marginBottom: 12 },
-  searchInput: { borderRadius: 16, padding: 13, marginBottom: 12 },
+  searchPanel: { borderWidth: 1, borderRadius: 16, padding: 8, marginBottom: 8 },
+  searchInput: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 8, minHeight: 38 },
   filterLabel: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', marginBottom: 7 },
   label: { fontWeight: '700', marginBottom: 6, marginTop: 12, color: '#334155' },
   learnGrid: { flexDirection: 'row', gap: 8, marginBottom: 12 },
@@ -323,19 +319,20 @@ const styles = StyleSheet.create({
   kanaCell: { width: 74, borderRadius: 14, padding: 10, alignItems: 'center' },
   fullButton: { alignItems: 'center', padding: 14, borderRadius: 16, marginTop: 6, marginBottom: 12 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  chip: { paddingVertical: 7, paddingHorizontal: 10, borderRadius: 999, backgroundColor: '#e2e8f0' },
+  filterRow: { gap: 6, paddingRight: 4 },
+  chip: { paddingVertical: 5, paddingHorizontal: 9, borderRadius: 999, backgroundColor: '#e2e8f0' },
   chipActive: { backgroundColor: '#2563eb' },
   chipText: { color: '#334155' },
   chipTextActive: { color: 'white', fontWeight: '700' },
-  card: { backgroundColor: 'transparent', padding: 12, borderRadius: 18, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' },
-  cardMain: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  card: { backgroundColor: 'transparent', padding: 10, borderRadius: 16, marginBottom: 8, borderWidth: 1, borderColor: '#e2e8f0' },
+  cardMain: { gap: 4 },
   kanaBadge: { width: 64, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   wordInfo: { flex: 1, minWidth: 0 },
-  kana: { fontSize: 30, fontWeight: '900', color: '#111827' },
+  kana: { flex: 1, flexShrink: 1, fontSize: 24, lineHeight: 32, fontWeight: '900', color: '#111827' },
   meaning: { fontSize: 17, color: '#334155', fontWeight: '900' },
   romaji: { fontSize: 14, fontWeight: '800', marginTop: 3 },
-  tagRow: { flexDirection: 'row', gap: 6, marginTop: 8, overflow: 'hidden' },
-  wordTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tagRow: { flexDirection: 'row', gap: 6, marginTop: 6, overflow: 'hidden' },
+  wordTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   speakButton: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   speakText: { fontSize: 13, fontWeight: '900' },
   pill: { maxWidth: 92, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 8, fontSize: 11, fontWeight: '800', overflow: 'hidden' },
