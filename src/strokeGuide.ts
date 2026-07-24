@@ -11,10 +11,16 @@ export const strokeGuides: Record<string, StrokeStep[]> = { ...animCjkStrokeGuid
 export function guideForKana(char: string) {
   const direct = strokeGuides[char];
   if (direct) return direct;
-  const parts = [...char].map((item) => strokeGuides[item]);
-  if (parts.length < 2 || parts.some((item) => !item)) return undefined;
-  const width = 320 / parts.length;
-  return parts.flatMap((guide, index) => guide!.map((step) => transformStep(step, 0.58, 0.72, index * width + 8, 44)));
+  const chars = [...char];
+  const parts = chars.map((item) => strokeGuides[item]);
+  if (parts.length !== 2 || parts.some((item) => !item)) return undefined;
+  return parts.flatMap((guide, index) => {
+    const small = index === 1;
+    const scale = small ? 0.48 : 0.62;
+    const dx = small ? 148 : -12;
+    const dy = small ? 78 : 24;
+    return guide!.map((step) => transformStep(step, scale, scale, dx, dy));
+  });
 }
 
 export function judgeStroke(points: Point[], step: StrokeStep) {
