@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, View, type View as ViewType } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { kanaItems } from '../../src/kanaGroups';
+import { kanaGroups, kanaItems } from '../../src/kanaGroups';
 import { judgeStroke, strokeGuides, type Point } from '../../src/strokeGuide';
 import { useTheme } from '../../src/theme';
 
@@ -14,6 +14,7 @@ export default function WriteScreen() {
   const t = useTheme();
   const [script, setScript] = useState<Script>('hiragana');
   const [index, setIndex] = useState(0);
+  const [groupLabel, setGroupLabel] = useState('Semua');
   const [guided, setGuided] = useState(true);
   const [stepIndex, setStepIndex] = useState(0);
   const [strokes, setStrokes] = useState<{ path: string; fill?: boolean }[]>([]);
@@ -25,8 +26,10 @@ export default function WriteScreen() {
   const pointsRef = useRef<Point[]>([]);
   const padRef = useRef<ViewType>(null);
   const padSize = useRef({ width: 320, height: 320 });
-  const chars = script === 'hiragana' ? hiraganaItems : katakanaItems;
-  const item = chars[index];
+  const drawingRef = useRef(false);
+  const allChars = script === 'hiragana' ? hiraganaItems : katakanaItems;
+  const chars = groupLabel === 'Semua' ? allChars : allChars.filter((item) => item.group === groupLabel);
+  const item = chars[index] ?? chars[0];
   const char = item.kana;
   const guide = strokeGuides[char] ?? strokeGuides[baseKana(char)];
   const step = guide?.[stepIndex];
@@ -48,14 +51,17 @@ export default function WriteScreen() {
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: (event) => {
+    onPanResponderGrant: (event, gesture) => {
+      if (event.nativeEvent.touches.length > 1 || gesture.numberActiveTouches > 1) return;
+      drawingRef.current = true;
       const point = touchPoint(event.nativeEvent.locationX, event.nativeEvent.locationY, padSize.current);
       pointsRef.current = [point];
       const path = `M ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
       draftRef.current = path;
       setDraft(path);
     },
-    onPanResponderMove: (event) => {
+    onPanResponderMove: (event, gesture) => {
+      if (!drawingRef.current || event.nativeEvent.touches.length > 1 || gesture.numberActiveTouches > 1) return;
       const point = touchPoint(event.nativeEvent.locationX, event.nativeEvent.locationY, padSize.current);
       pointsRef.current.push(point);
       const path = smoothPath(pointsRef.current);
@@ -69,6 +75,7 @@ export default function WriteScreen() {
   function finishStroke() {
     const path = draftRef.current;
     const points = pointsRef.current;
+    drawingRef.current = false;
     draftRef.current = '';
     pointsRef.current = [];
     setDraft('');
@@ -121,6 +128,12 @@ export default function WriteScreen() {
     setMessage('Ikuti stroke terang. Titik hijau = mulai, merah = akhir.');
   }
 
+  function changeGroup(nextGroup: string) {
+    setGroupLabel(nextGroup);
+    setIndex(0);
+    resetCanvas();
+  }
+
   return (
     <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={styles.wrap} showsVerticalScrollIndicator={false}> 
       <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Autocorrect stroke offline. Huruf tanpa data stroke tetap bisa latihan free draw dulu.</Text>
@@ -131,6 +144,9 @@ export default function WriteScreen() {
         <Chip label={guided ? 'Auto on' : 'Free draw'} active={guided} onPress={() => { setGuided(!guided); resetCanvas(); }} />
         <Chip label={showAnimation ? 'Anim on' : 'Anim off'} active={showAnimation} onPress={() => setShowAnimation(!showAnimation)} />
       </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.groupRow}>
+        {['Semua', ...kanaGroups.map((item) => item.label)].map((label) => <Chip key={label} label={label} active={groupLabel === label} onPress={() => changeGroup(label)} />)}
+      </ScrollView>
 
       <View style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]}> 
         <Text style={[styles.counter, { color: t.sub, fontFamily: t.font }]}>{index + 1} / {chars.length}{guide ? ` · stroke ${Math.min(stepIndex + 1, guide.length)} / ${guide.length}` : ' · free'}</Text>
@@ -214,6 +230,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '900', marginBottom: 6 },
   note: { lineHeight: 20, marginBottom: 14 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  groupRow: { gap: 8, paddingBottom: 14 },
   chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999 },
   chipText: { fontWeight: '800' },
   card: { borderWidth: 1, borderRadius: 22, padding: 16, marginBottom: 14, alignItems: 'center' },
