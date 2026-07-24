@@ -11,7 +11,10 @@
     ],
     "android": {
       "package": "com.dimas.kotobaoffline",
-      "permissions": ["POST_NOTIFICATIONS"]
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ],
+      "icon": "./assets/icon.jpg"
     },
     "plugins": [
       "expo-router",
@@ -23,6 +26,7 @@
       ],
       "expo-font",
       "expo-notifications"
-    ]
+    ],
+    "icon": "./assets/icon.jpg"
   }
 }
