@@ -7,7 +7,7 @@ import { useTheme } from '../../src/theme';
 export default function TabsLayout() {
   const t = useTheme();
   return (
-    <Tabs tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: t.bg } }}>
+    <Tabs tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{ headerShown: true, sceneStyle: { backgroundColor: t.bg }, headerStyle: { backgroundColor: t.bg }, headerShadowVisible: false, headerTitleStyle: { color: t.text, fontFamily: t.font, fontWeight: '900' }, headerTintColor: t.text }}>
       <Tabs.Screen name="index" options={{ title: 'Kotoba', tabBarIcon: ({ color, size }) => <Ionicons name="book-outline" color={color} size={size} /> }} />
       <Tabs.Screen name="flashcard" options={{ title: 'Cards', tabBarIcon: ({ color, size }) => <Ionicons name="albums-outline" color={color} size={size} /> }} />
       <Tabs.Screen name="quiz" options={{ title: 'Quiz', tabBarIcon: ({ color, size }) => <Ionicons name="help-circle-outline" color={color} size={size} /> }} />
@@ -73,7 +73,8 @@ function FloatingTabBar({ state, descriptors, navigation }: any) {
   }), [state.index, state.routes.length, step, indicatorX, pressScale, navigation]);
 
   return (
-    <View pointerEvents="box-none" style={styles.shell}>
+    <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+      <View pointerEvents="box-none" style={styles.shell}>
       <Animated.View style={[styles.dock, { backgroundColor: t.dock, borderColor: t.border, shadowColor: t.dark ? '#000' : '#94a3b8', transform: [{ scale: pressScale }] }]} {...pan.panHandlers}>
         <Animated.View pointerEvents="none" style={[styles.indicator, { width: tabWidth, backgroundColor: t.primary, transform: [{ translateX: indicatorX }] }]} />
         {state.routes.map((route: any, index: number) => {
@@ -90,6 +91,7 @@ function FloatingTabBar({ state, descriptors, navigation }: any) {
           );
         })}
       </Animated.View>
+      </View>
     </View>
   );
 }

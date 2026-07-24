@@ -24,7 +24,7 @@ export default function WriteScreen() {
   const draftRef = useRef('');
   const pointsRef = useRef<Point[]>([]);
   const padRef = useRef<ViewType>(null);
-  const padOffset = useRef({ x: 0, y: 0 });
+  const padSize = useRef({ width: 320, height: 320 });
   const chars = script === 'hiragana' ? hiraganaItems : katakanaItems;
   const item = chars[index];
   const char = item.kana;
@@ -49,15 +49,14 @@ export default function WriteScreen() {
     onMoveShouldSetPanResponder: () => true,
     onPanResponderTerminationRequest: () => false,
     onPanResponderGrant: (event) => {
-      padRef.current?.measureInWindow((x, y) => { padOffset.current = { x, y }; });
-      const point = touchPoint(event.nativeEvent.pageX, event.nativeEvent.pageY, padOffset.current);
+      const point = touchPoint(event.nativeEvent.locationX, event.nativeEvent.locationY, padSize.current);
       pointsRef.current = [point];
       const path = `M ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
       draftRef.current = path;
       setDraft(path);
     },
     onPanResponderMove: (event) => {
-      const point = touchPoint(event.nativeEvent.pageX, event.nativeEvent.pageY, padOffset.current);
+      const point = touchPoint(event.nativeEvent.locationX, event.nativeEvent.locationY, padSize.current);
       pointsRef.current.push(point);
       const path = smoothPath(pointsRef.current);
       draftRef.current = path;
@@ -124,7 +123,6 @@ export default function WriteScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={styles.wrap} showsVerticalScrollIndicator={false}> 
-      <Text style={[styles.title, { color: t.text, fontFamily: t.font }]}>Write</Text>
       <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Autocorrect stroke offline. Huruf tanpa data stroke tetap bisa latihan free draw dulu.</Text>
 
       <View style={styles.row}>
@@ -141,11 +139,11 @@ export default function WriteScreen() {
         <Text style={[styles.message, { color: t.sub, fontFamily: t.font }]}>{step?.hint ?? message}</Text>
       </View>
 
-      <View ref={padRef} collapsable={false} style={[styles.pad, { backgroundColor: t.card, borderColor: t.border }]} {...pan.panHandlers}>
+      <View ref={padRef} collapsable={false} onLayout={(event) => { padSize.current = event.nativeEvent.layout; }} style={[styles.pad, { backgroundColor: t.card, borderColor: t.border }]} {...pan.panHandlers}>
         <View pointerEvents="none" collapsable={false} style={StyleSheet.absoluteFill}>
           <View style={[styles.midV, { backgroundColor: t.border }]} />
           <View style={[styles.midH, { backgroundColor: t.border }]} />
-          <Svg width="100%" height="100%">
+          <Svg width="100%" height="100%" viewBox="0 0 320 320">
             {guide?.flatMap((item, i) => item.fillPaths?.length
               ? item.fillPaths.map((path, fillIndex) => <Path key={`guide-${i}-${fillIndex}`} d={path} fill={i === stepIndex ? t.warn : t.border} opacity={i < stepIndex ? 0.12 : i === stepIndex ? 0.34 : 0.18} />)
               : [<Path key={`guide-${i}`} d={item.path} stroke={i === stepIndex ? t.warn : t.border} strokeWidth={i === stepIndex ? 18 : 12} strokeDasharray={i === stepIndex ? undefined : '10 10'} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={i < stepIndex ? 0.14 : 0.42} />]
@@ -195,8 +193,11 @@ function smoothPath(points: Point[]) {
   return parts.join(' ');
 }
 
-function touchPoint(pageX: number, pageY: number, offset: { x: number; y: number }) {
-  return { x: clamp(pageX - offset.x, 0, 320), y: clamp(pageY - offset.y, 0, 320) };
+function touchPoint(x: number, y: number, size: { width: number; height: number }) {
+  return {
+    x: clamp((x / size.width) * 320, 0, 320),
+    y: clamp((y / size.height) * 320, 0, 320)
+  };
 }
 
 function clamp(value: number, min: number, max: number) {

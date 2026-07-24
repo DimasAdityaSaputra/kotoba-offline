@@ -1,10 +1,11 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Animated, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { deleteVocab, initDb, listVocab, updateVocab } from '../../src/db';
 import { romajiToKana } from '../../src/kana';
 import { kanaGroups } from '../../src/kanaGroups';
 import { numberToJapanese } from '../../src/numberQuiz';
+import { speakJapanese } from '../../src/speech';
 import { useTheme } from '../../src/theme';
 import type { JlptLevel, ScriptType, VocabFilters, VocabItem } from '../../src/types';
 
@@ -17,12 +18,15 @@ export default function KotobaScreen() {
   const [items, setItems] = useState<VocabItem[]>([]);
   const [editing, setEditing] = useState<VocabItem | null>(null);
   const [learnMode, setLearnMode] = useState<'kotoba' | 'number' | 'letter'>('kotoba');
+  const [menuOpen, setMenuOpen] = useState(false);
   const [form, setForm] = useState({ kana: '', romaji: '', meaning_id: '', category: '', group: '', jlpt_level: 'N5' as JlptLevel, script_type: 'hiragana' as ScriptType });
+  const deferredQuery = useDeferredValue(filters.query);
+  const dbFilters = useMemo(() => ({ ...filters, query: deferredQuery }), [filters, deferredQuery]);
 
   const load = useCallback(() => {
     initDb();
-    setItems(listVocab(filters));
-  }, [filters]);
+    setItems(listVocab(dbFilters));
+  }, [dbFilters]);
 
   useFocusEffect(load);
 
@@ -56,38 +60,79 @@ export default function KotobaScreen() {
     ]);
   }
 
+  const stats = useMemo(() => getKotobaStats(items), [items]);
+
   return (
     <View style={[styles.wrap, { backgroundColor: t.bg }]}>
-      <Text style={[styles.title, { color: t.text, fontFamily: t.font }]}>Kotoba</Text>
-      <View style={styles.learnGrid}>
-        <LearnCard title="Kotoba" desc="Kosakata per bab" active={learnMode === 'kotoba'} onPress={() => setLearnMode('kotoba')} />
-        <LearnCard title="Nomor" desc="Contoh + rumus" active={learnMode === 'number'} onPress={() => setLearnMode('number')} />
-        <LearnCard title="Huruf" desc="Semua kana" active={learnMode === 'letter'} onPress={() => setLearnMode('letter')} />
+      <View style={styles.kotobaShell}>
+        <View style={styles.contentPane}>
+          {learnMode === 'kotoba' && <>
+            <View style={[styles.compactHead, { backgroundColor: t.card, borderColor: t.border }]}>
+              <Pressable style={[styles.menuButton, { backgroundColor: t.card2 }]} onPress={() => setMenuOpen(true)}><Text style={[styles.menuIcon, { color: t.text, fontFamily: t.font }]}>☰</Text></Pressable>
+              <View style={styles.compactTitleBox}>
+                <Text style={[styles.heroKicker, { color: t.primary, fontFamily: t.font }]}>Library</Text>
+                <Text style={[styles.compactTitle, { color: t.text, fontFamily: t.font }]}>Kotoba</Text>
+              </View>
+              <Pressable style={[styles.heroAction, { backgroundColor: t.primary }]} onPress={() => router.navigate('/add')}>
+                <Text style={[styles.heroActionText, { fontFamily: t.font }]}>＋</Text>
+              </Pressable>
+            </View>
+            <View style={styles.miniStats}>
+              <Stat label="Total" value={String(stats.total)} />
+              <Stat label="N5" value={String(stats.n5)} />
+              <Stat label="User" value={String(stats.user)} />
+            </View>
+            <View style={[styles.searchPanel, { backgroundColor: t.card, borderColor: t.border }]}>
+              <TextInput placeholderTextColor={t.sub} style={[styles.searchInput, { backgroundColor: t.card2, color: t.text, fontFamily: t.font }]} placeholder="Cari..." value={filters.query} onChangeText={(query) => setFilters({ ...filters, query })} />
+              <View style={styles.row}>
+                {(['all', 'hiragana', 'katakana'] as const).map((value) => <Chip key={value} label={value} active={filters.script_type === value} onPress={() => setFilters({ ...filters, script_type: value })} />)}
+              </View>
+              <View style={styles.row}>
+                {(['all', 'N5', 'N4', 'uncategorized'] as const).map((value) => <Chip key={value} label={value} active={filters.jlpt_level === value} onPress={() => setFilters({ ...filters, jlpt_level: value })} />)}
+              </View>
+            </View>
+            <FlatList
+              data={items}
+              keyExtractor={(item) => String(item.id)}
+              contentContainerStyle={{ paddingBottom: 108 }}
+              initialNumToRender={10}
+              maxToRenderPerBatch={10}
+              windowSize={7}
+              removeClippedSubviews
+              renderItem={({ item }) => (
+                <Pressable style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]} onPress={() => openEdit(item)} onLongPress={() => remove(item)}>
+                  <View style={styles.cardMain}>
+                    <View style={[styles.kanaBadge, { backgroundColor: t.card2 }]}><Text style={[styles.kana, { color: t.text, fontFamily: t.font }]}>{item.kana}</Text></View>
+                    <View style={styles.wordInfo}>
+                      <View style={styles.wordTop}><Text style={[styles.meaning, { color: t.text, fontFamily: t.font }]} numberOfLines={1}>{item.meaning_id}</Text><Pressable style={[styles.speakButton, { backgroundColor: t.card2 }]} onPress={() => speakJapanese(item.kana)}><Text style={[styles.speakText, { color: t.primary }]}>▶</Text></Pressable></View>
+                      <Text style={[styles.romaji, { color: t.primary, fontFamily: t.font }]} numberOfLines={1}>{item.romaji}</Text>
+                      <View style={styles.tagRow}><Pill text={item.script_type} /><Pill text={item.jlpt_level} /><Pill text={item.group || 'bab'} /></View>
+                    </View>
+                  </View>
+                </Pressable>
+              )}
+              ListEmptyComponent={<Text style={[styles.empty, { color: t.sub, fontFamily: t.font }]}>Kosakata kosong.</Text>}
+            />
+          </>}
+          {learnMode === 'letter' && <>
+            <MiniHeader title="Huruf" onMenu={() => setMenuOpen(true)} />
+            <KanaReference onWrite={() => router.navigate('/write')} />
+          </>}
+          {learnMode === 'number' && <>
+            <MiniHeader title="Nomor" onMenu={() => setMenuOpen(true)} />
+            <NumberReference onQuiz={() => router.navigate('/quiz')} />
+          </>}
+        </View>
       </View>
-      {learnMode === 'number' && <NumberReference onQuiz={() => router.navigate('/quiz')} />}
-      {learnMode === 'letter' && <KanaReference onWrite={() => router.navigate('/write')} />}
-      {learnMode === 'kotoba' && <>
-      <TextInput placeholderTextColor={t.sub} style={[styles.input, { backgroundColor: t.card, borderColor: t.border, color: t.text, fontFamily: t.font }]} placeholder="Cari kana, romaji, arti..." value={filters.query} onChangeText={(query) => setFilters({ ...filters, query })} />
-      <View style={styles.row}>
-        {(['all', 'hiragana', 'katakana'] as const).map((value) => <Chip key={value} label={value} active={filters.script_type === value} onPress={() => setFilters({ ...filters, script_type: value })} />)}
-      </View>
-      <View style={styles.row}>
-        {(['all', 'N5', 'N4', 'uncategorized'] as const).map((value) => <Chip key={value} label={value} active={filters.jlpt_level === value} onPress={() => setFilters({ ...filters, jlpt_level: value })} />)}
-      </View>
-      <FlatList
-        data={items}
-        keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={{ paddingBottom: 108 }}
-        renderItem={({ item }) => (
-          <Pressable style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]} onPress={() => openEdit(item)} onLongPress={() => remove(item)}>
-            <Text style={[styles.kana, { color: t.text, fontFamily: t.font }]}>{item.kana}</Text>
-            <Text style={[styles.meaning, { color: t.label, fontFamily: t.font }]}>{item.romaji} · {item.meaning_id}</Text>
-            <Text style={[styles.meta, { color: t.sub, fontFamily: t.font }]}>{item.script_type} · {item.jlpt_level} · {item.category} · {item.group} · {item.source}</Text>
-          </Pressable>
-        )}
-        ListEmptyComponent={<Text style={[styles.empty, { color: t.sub, fontFamily: t.font }]}>Kosakata kosong.</Text>}
-      />
-      </>}
+      <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
+          <View style={[styles.menuSheet, { backgroundColor: t.card, borderColor: t.border }]}>
+            <MenuItem title="Kotoba" active={learnMode === 'kotoba'} onPress={() => { setLearnMode('kotoba'); setMenuOpen(false); }} />
+            <MenuItem title="Huruf" active={learnMode === 'letter'} onPress={() => { setLearnMode('letter'); setMenuOpen(false); }} />
+            <MenuItem title="Nomor" active={learnMode === 'number'} onPress={() => { setLearnMode('number'); setMenuOpen(false); }} />
+          </View>
+        </Pressable>
+      </Modal>
 
       <Modal visible={!!editing} animationType="slide" onRequestClose={() => setEditing(null)}>
         <ScrollView style={[styles.wrap, { backgroundColor: t.bg }]} contentContainerStyle={{ paddingBottom: 108 }}>
@@ -112,35 +157,38 @@ export default function KotobaScreen() {
   );
 }
 
-function NumberReference({ onQuiz }: { onQuiz: () => void }) {
+const NUMBER_EXAMPLES = [121,1230,1670,1989,0,1,2,3,4,5,6,7,8,9,10,11,20,21,100,300,600,800,1000,3000,8000,10000,25000,100000];
+const NUMBER_RULES = [
+  '1-9: ichi, ni, san, yon, go, roku, nana, hachi, kyuu',
+  '10: juu. 11 = juu ichi. 20 = ni juu. 21 = ni juu ichi',
+  '100: hyaku. 200 = ni hyaku. 300 = sanbyaku. 600 = roppyaku. 800 = happyaku',
+  '1000: sen. 2000 = ni sen. 3000 = sanzen. 8000 = hassen',
+  '10000: ichi man. 25000 = ni man go sen'
+];
+const NUMBER_BREAKDOWNS = [
+  ['121', '100 + 20 + 1', 'hyaku + ni juu + ichi', 'hyaku ni juu ichi'],
+  ['1230', '1000 + 200 + 30', 'sen + ni hyaku + san juu', 'sen ni hyaku san juu'],
+  ['1670', '1000 + 600 + 70', 'sen + roppyaku + nana juu', 'sen roppyaku nana juu'],
+  ['1989', '1000 + 900 + 80 + 9', 'sen + kyuu hyaku + hachi juu + kyuu', 'sen kyuu hyaku hachi juu kyuu']
+];
+
+const NumberReference = memo(function NumberReference({ onQuiz }: { onQuiz: () => void }) {
   const t = useTheme();
   const [numberInput, setNumberInput] = useState('121');
   const value = Math.max(0, Math.min(100000, Number(numberInput.replace(/\D/g, '') || 0)));
   const converted = numberToJapanese(value);
-  const examples = [121,1230,1670,1989,0,1,2,3,4,5,6,7,8,9,10,11,20,21,100,300,600,800,1000,3000,8000,10000,25000,100000];
   return <ScrollView style={styles.referenceBox} contentContainerStyle={{ paddingBottom: 108 }}>
     <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Nomor Jepang</Text>
     <Text style={[styles.refNote, { color: t.sub, fontFamily: t.font }]}>Cara mikirnya: pecah angka dari kiri ke kanan. Ribuan → ratusan → puluhan → satuan. Kalau digit 1 di depan hyaku/sen biasanya nama satuannya dibuang: 100 = hyaku, 1000 = sen. Tapi 10000 tetap ichiman.</Text>
 
     <View style={[styles.ruleCard, { backgroundColor: t.card, borderColor: t.border }]}>
       <Text style={[styles.ruleHead, { color: t.text, fontFamily: t.font }]}>Rumus inti</Text>
-      {[
-        '1-9: ichi, ni, san, yon, go, roku, nana, hachi, kyuu',
-        '10: juu. 11 = juu ichi. 20 = ni juu. 21 = ni juu ichi',
-        '100: hyaku. 200 = ni hyaku. 300 = sanbyaku. 600 = roppyaku. 800 = happyaku',
-        '1000: sen. 2000 = ni sen. 3000 = sanzen. 8000 = hassen',
-        '10000: ichi man. 25000 = ni man go sen'
-      ].map((row) => <Text key={row} style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{row}</Text>)}
+      {NUMBER_RULES.map((row) => <Text key={row} style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{row}</Text>)}
     </View>
 
     <View style={[styles.ruleCard, { backgroundColor: t.card, borderColor: t.border }]}>
       <Text style={[styles.ruleHead, { color: t.text, fontFamily: t.font }]}>Contoh dibedah</Text>
-      {[
-        ['121', '100 + 20 + 1', 'hyaku + ni juu + ichi', 'hyaku ni juu ichi'],
-        ['1230', '1000 + 200 + 30', 'sen + ni hyaku + san juu', 'sen ni hyaku san juu'],
-        ['1670', '1000 + 600 + 70', 'sen + roppyaku + nana juu', 'sen roppyaku nana juu'],
-        ['1989', '1000 + 900 + 80 + 9', 'sen + kyuu hyaku + hachi juu + kyuu', 'sen kyuu hyaku hachi juu kyuu']
-      ].map(([num, split, parts, final]) => <View key={num} style={styles.breakdown}><Text style={[styles.ruleHead, { color: t.text, fontFamily: t.font }]}>{num}</Text><Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{split}</Text><Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{parts}</Text><Text style={[styles.refRomaji, { color: t.primary, fontFamily: t.font }]}>{final}</Text><Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{romajiToKana(final, 'hiragana', true)}</Text></View>)}
+      {NUMBER_BREAKDOWNS.map(([num, split, parts, final]) => <View key={num} style={styles.breakdown}><Text style={[styles.ruleHead, { color: t.text, fontFamily: t.font }]}>{num}</Text><Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{split}</Text><Text style={[styles.ruleText, { color: t.label, fontFamily: t.font }]}>{parts}</Text><Text style={[styles.refRomaji, { color: t.primary, fontFamily: t.font }]}>{final}</Text><Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{romajiToKana(final, 'hiragana', true)}</Text></View>)}
     </View>
 
     <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Coba angka sendiri</Text>
@@ -149,21 +197,60 @@ function NumberReference({ onQuiz }: { onQuiz: () => void }) {
       <Text style={[styles.refKana, { color: t.text, fontFamily: t.font }]}>{value}</Text>
       <Text style={[styles.refRomaji, { color: t.primary, fontFamily: t.font }]}>{converted}</Text>
       <Text style={[styles.refKana, { color: t.text, fontFamily: t.font }]}>{romajiToKana(converted, 'hiragana', true)}</Text>
+      <Pressable style={[styles.fullButton, { backgroundColor: t.primary }]} onPress={() => speakJapanese(romajiToKana(converted, 'hiragana', true))}><Text style={styles.buttonText}>Dengar Jepang</Text></Pressable>
     </View>
 
-    <View style={styles.numberGrid}>{examples.map((item) => <View key={item} style={[styles.refCell, { backgroundColor: t.card, borderColor: t.border }]}><Text style={[styles.refKana, { color: t.text, fontFamily: t.font }]}>{item}</Text><Text style={[styles.refRomaji, { color: t.sub, fontFamily: t.font }]}>{numberToJapanese(item)}</Text><Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{romajiToKana(numberToJapanese(item), 'hiragana', true)}</Text></View>)}</View>
+    <View style={styles.numberGrid}>{NUMBER_EXAMPLES.map((item) => <View key={item} style={[styles.refCell, { backgroundColor: t.card, borderColor: t.border }]}><Text style={[styles.refKana, { color: t.text, fontFamily: t.font }]}>{item}</Text><Text style={[styles.refRomaji, { color: t.sub, fontFamily: t.font }]}>{numberToJapanese(item)}</Text><Text style={[styles.refMini, { color: t.sub, fontFamily: t.font }]}>{romajiToKana(numberToJapanese(item), 'hiragana', true)}</Text></View>)}</View>
     <Pressable style={[styles.fullButton, { backgroundColor: t.primary }]} onPress={onQuiz}><Text style={styles.buttonText}>Latihan quiz nomor</Text></Pressable>
   </ScrollView>;
-}
+});
 
-function KanaReference({ onWrite }: { onWrite: () => void }) {
+const KanaReference = memo(function KanaReference({ onWrite }: { onWrite: () => void }) {
   const t = useTheme();
   return <ScrollView style={styles.referenceBox} contentContainerStyle={{ paddingBottom: 108 }}>
     <Text style={[styles.refTitle, { color: t.text, fontFamily: t.font }]}>Huruf Kana</Text>
     <Text style={[styles.refNote, { color: t.sub, fontFamily: t.font }]}>Hiragana buat kata Jepang asli. Katakana buat serapan/nama/penekanan. Yōon pakai huruf kecil: き + ゃ = きゃ.</Text>
-    {kanaGroups.map((group) => <View key={group.label} style={[styles.kanaGroup, { backgroundColor: t.card, borderColor: t.border }]}><Text style={[styles.groupTitle, { color: t.text, fontFamily: t.font }]}>{group.label}</Text><View style={styles.kanaGrid}>{group.romaji.map((romaji, index) => <View key={`${group.label}-${romaji}-${index}`} style={[styles.kanaCell, { backgroundColor: t.card2 }]}><Text style={[styles.refKana, { color: t.text, fontFamily: t.font }]}>{group.hiragana[index]}</Text><Text style={[styles.refKana, { color: t.text, fontFamily: t.font }]}>{group.katakana[index]}</Text><Text style={[styles.refRomaji, { color: t.sub, fontFamily: t.font }]}>{romaji}</Text></View>)}</View></View>)}
+    {kanaGroups.map((group) => <View key={group.label} style={[styles.kanaGroup, { backgroundColor: t.card, borderColor: t.border }]}><Text style={[styles.groupTitle, { color: t.text, fontFamily: t.font }]}>{group.label}</Text><View style={styles.kanaGrid}>{group.romaji.map((romaji, index) => <Pressable key={`${group.label}-${romaji}-${index}`} onPress={() => speakJapanese(group.hiragana[index])} style={[styles.kanaCell, { backgroundColor: t.card2 }]}><Text style={[styles.refKana, { color: t.text, fontFamily: t.font }]}>{group.hiragana[index]}</Text><Text style={[styles.refKana, { color: t.text, fontFamily: t.font }]}>{group.katakana[index]}</Text><Text style={[styles.refRomaji, { color: t.sub, fontFamily: t.font }]}>{romaji}</Text></Pressable>)}</View></View>)}
     <Pressable style={[styles.fullButton, { backgroundColor: t.primary }]} onPress={onWrite}><Text style={styles.buttonText}>Latihan nulis huruf</Text></Pressable>
   </ScrollView>;
+});
+
+function getKotobaStats(items: VocabItem[]) {
+  return {
+    total: items.length,
+    n5: items.filter((item) => item.jlpt_level === 'N5').length,
+    user: items.filter((item) => item.source === 'user').length
+  };
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  const t = useTheme();
+  return <View style={[styles.statCard, { backgroundColor: t.card2 }]}><Text style={[styles.statValue, { color: t.text, fontFamily: t.font }]}>{value}</Text><Text style={[styles.statLabel, { color: t.sub, fontFamily: t.font }]}>{label}</Text></View>;
+}
+
+function Pill({ text }: { text: string }) {
+  const t = useTheme();
+  return <Text style={[styles.pill, { backgroundColor: t.card2, color: t.sub, fontFamily: t.font }]} numberOfLines={1}>{text}</Text>;
+}
+
+function MiniHeader({ title, onMenu }: { title: string; onMenu: () => void }) {
+  const t = useTheme();
+  return <View style={[styles.compactHead, { backgroundColor: t.card, borderColor: t.border }]}>
+    <Pressable style={[styles.menuButton, { backgroundColor: t.card2 }]} onPress={onMenu}><Text style={[styles.menuIcon, { color: t.text, fontFamily: t.font }]}>☰</Text></Pressable>
+    <Text style={[styles.compactTitle, { color: t.text, fontFamily: t.font }]}>{title}</Text>
+  </View>;
+}
+
+function MenuItem({ title, active, onPress }: { title: string; active: boolean; onPress: () => void }) {
+  const t = useTheme();
+  return <Pressable onPress={onPress} style={[styles.menuItem, { backgroundColor: active ? t.primary : t.card2 }]}><Text style={[styles.menuText, { color: active ? 'white' : t.label, fontFamily: t.font }]}>{title}</Text></Pressable>;
+}
+
+function SideTab({ title, active, onPress }: { title: string; active: boolean; onPress: () => void }) {
+  const t = useTheme();
+  const scale = useRef(new Animated.Value(1)).current;
+  useEffect(() => { Animated.spring(scale, { toValue: active ? 1.04 : 1, useNativeDriver: true, stiffness: 260, damping: 20 }).start(); }, [active, scale]);
+  return <Animated.View style={{ transform: [{ scale }] }}><Pressable onPress={onPress} style={[styles.sideTab, { backgroundColor: active ? t.primary : t.card2 }]}><Text style={[styles.sideTabText, { color: active ? 'white' : t.label, fontFamily: t.font }]}>{title}</Text></Pressable></Animated.View>;
 }
 
 function LearnCard({ title, desc, active, onPress }: { title: string; desc: string; active?: boolean; onPress?: () => void }) {
@@ -182,9 +269,37 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, padding: 16, backgroundColor: 'transparent' },
+  wrap: { flex: 1, paddingHorizontal: 12, paddingBottom: 12, paddingTop: 0, backgroundColor: 'transparent' },
+  kotobaShell: { flex: 1 },
+  sideRail: { width: 76, borderWidth: 1, borderRadius: 22, padding: 8, gap: 8, alignSelf: 'flex-start' },
+  sideTab: { minHeight: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  sideTabText: { fontSize: 12, fontWeight: '900' },
+  contentPane: { flex: 1, minWidth: 0 },
+  compactHead: { borderWidth: 1, borderRadius: 18, padding: 10, marginBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  compactTitleBox: { flex: 1 },
+  menuButton: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  menuIcon: { fontSize: 22, fontWeight: '900' },
+  menuBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', paddingTop: 118, paddingHorizontal: 16 },
+  menuSheet: { width: 172, borderWidth: 1, borderRadius: 22, padding: 8, gap: 8 },
+  menuItem: { minHeight: 48, borderRadius: 15, justifyContent: 'center', paddingHorizontal: 14 },
+  menuText: { fontSize: 15, fontWeight: '900' },
+  compactTitle: { fontSize: 22, fontWeight: '900' },
+  miniStats: { flexDirection: 'row', gap: 6, marginBottom: 8 },
+  hero: { borderWidth: 1, borderRadius: 24, padding: 16, marginBottom: 12 },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  heroKicker: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3 },
+  heroTitle: { fontSize: 24, fontWeight: '900' },
+  heroAction: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  heroActionText: { color: 'white', fontSize: 26, fontWeight: '900', marginTop: -2 },
+  statsRow: { flexDirection: 'row', gap: 8 },
+  statCard: { flex: 1, borderRadius: 16, padding: 10 },
+  statValue: { fontSize: 20, fontWeight: '900' },
+  statLabel: { fontSize: 12, fontWeight: '800', marginTop: 2 },
   title: { fontSize: 28, fontWeight: '800', marginBottom: 12, color: '#0f172a' },
   input: { backgroundColor: 'transparent', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
+  searchPanel: { borderWidth: 1, borderRadius: 22, padding: 12, marginBottom: 12 },
+  searchInput: { borderRadius: 16, padding: 13, marginBottom: 12 },
+  filterLabel: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', marginBottom: 7 },
   label: { fontWeight: '700', marginBottom: 6, marginTop: 12, color: '#334155' },
   learnGrid: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   learnCard: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 12, minHeight: 74 },
@@ -212,9 +327,18 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: '#2563eb' },
   chipText: { color: '#334155' },
   chipTextActive: { color: 'white', fontWeight: '700' },
-  card: { backgroundColor: 'transparent', padding: 14, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' },
-  kana: { fontSize: 30, fontWeight: '800', color: '#111827' },
-  meaning: { fontSize: 16, color: '#334155', marginTop: 4 },
+  card: { backgroundColor: 'transparent', padding: 12, borderRadius: 18, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' },
+  cardMain: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  kanaBadge: { width: 64, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  wordInfo: { flex: 1, minWidth: 0 },
+  kana: { fontSize: 30, fontWeight: '900', color: '#111827' },
+  meaning: { fontSize: 17, color: '#334155', fontWeight: '900' },
+  romaji: { fontSize: 14, fontWeight: '800', marginTop: 3 },
+  tagRow: { flexDirection: 'row', gap: 6, marginTop: 8, overflow: 'hidden' },
+  wordTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  speakButton: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  speakText: { fontSize: 13, fontWeight: '900' },
+  pill: { maxWidth: 92, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 8, fontSize: 11, fontWeight: '800', overflow: 'hidden' },
   meta: { color: '#64748b', marginTop: 8 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 20, marginBottom: 10 },
   button: { flex: 1, backgroundColor: '#2563eb', padding: 14, borderRadius: 14, alignItems: 'center' },

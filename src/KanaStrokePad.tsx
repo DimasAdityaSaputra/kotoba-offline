@@ -13,10 +13,11 @@ export function KanaStrokePad({ char, misses, revealAfter = 5, height = 300, onC
   const draftRef = useRef('');
   const pointsRef = useRef<Point[]>([]);
   const padRef = useRef<ViewType>(null);
-  const padOffset = useRef({ x: 0, y: 0 });
+  const padSize = useRef({ width: 320, height });
   const guide = strokeGuides[char] ?? strokeGuides[baseKana(char)];
   const step = guide?.[stepIndex];
-  const showGuide = misses >= revealAfter;
+  const hasGuide = !!guide && !!step;
+  const showGuide = hasGuide && misses >= revealAfter;
   const animInput = step?.points?.map((_, i) => i / Math.max(1, step.points!.length - 1)) ?? [0, 1];
   const animX = showGuide && step?.points?.length ? anim.interpolate({ inputRange: animInput, outputRange: step.points.map((point) => point.x) }) : undefined;
   const animY = showGuide && step?.points?.length ? anim.interpolate({ inputRange: animInput, outputRange: step.points.map((point) => point.y) }) : undefined;
@@ -41,15 +42,14 @@ export function KanaStrokePad({ char, misses, revealAfter = 5, height = 300, onC
     onMoveShouldSetPanResponder: () => true,
     onPanResponderTerminationRequest: () => false,
     onPanResponderGrant: (event) => {
-      padRef.current?.measureInWindow((x, y) => { padOffset.current = { x, y }; });
-      const point = touchPoint(event.nativeEvent.pageX, event.nativeEvent.pageY, padOffset.current, height);
+      const point = touchPoint(event.nativeEvent.locationX, event.nativeEvent.locationY, padSize.current);
       pointsRef.current = [point];
       const path = `M ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
       draftRef.current = path;
       setDraft(path);
     },
     onPanResponderMove: (event) => {
-      const point = touchPoint(event.nativeEvent.pageX, event.nativeEvent.pageY, padOffset.current, height);
+      const point = touchPoint(event.nativeEvent.locationX, event.nativeEvent.locationY, padSize.current);
       pointsRef.current.push(point);
       const path = smoothPath(pointsRef.current);
       draftRef.current = path;
@@ -64,7 +64,12 @@ export function KanaStrokePad({ char, misses, revealAfter = 5, height = 300, onC
     draftRef.current = '';
     pointsRef.current = [];
     setDraft('');
-    if (!step || !guide || !points.length) return;
+    if (!points.length) return;
+    if (!hasGuide) {
+      setStrokes((current) => [...current, { path: smoothPath(points) }]);
+      onCorrect();
+      return;
+    }
     if (!judgeStroke(points, step)) {
       onMiss();
       return;
@@ -76,23 +81,23 @@ export function KanaStrokePad({ char, misses, revealAfter = 5, height = 300, onC
   }
 
   return (
-    <View ref={padRef} collapsable={false} style={[styles.pad, { height, backgroundColor: t.card, borderColor: t.border }]} {...pan.panHandlers}>
+    <View ref={padRef} collapsable={false} onLayout={(event) => { padSize.current = event.nativeEvent.layout; }} style={[styles.pad, { height, backgroundColor: t.card, borderColor: t.border }]} {...pan.panHandlers}>
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         <View style={[styles.midV, { backgroundColor: t.border }]} />
         <View style={[styles.midH, { backgroundColor: t.border }]} />
         <Svg width="100%" height="100%" viewBox={`0 0 320 ${height}`}>
-          {showGuide && guide?.flatMap((item, i) => item.fillPaths?.length
+          {showGuide && guide.flatMap((item, i) => item.fillPaths?.length
             ? item.fillPaths.map((path, fillIndex) => <Path key={`guide-${i}-${fillIndex}`} d={path} fill={i === stepIndex ? t.warn : t.border} opacity={i < stepIndex ? 0.1 : i === stepIndex ? 0.32 : 0.16} />)
             : [<Path key={`guide-${i}`} d={item.path} stroke={i === stepIndex ? t.warn : t.border} strokeWidth={i === stepIndex ? 18 : 12} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={i < stepIndex ? 0.14 : 0.42} />]
           )}
-          {showGuide && step && <Path d={`M ${step.start.x} ${step.start.y} L ${step.start.x + 0.1} ${step.start.y + 0.1}`} stroke="#22c55e" strokeWidth={13} strokeLinecap="round" />}
-          {showGuide && step && <Path d={`M ${step.end.x} ${step.end.y} L ${step.end.x + 0.1} ${step.end.y + 0.1}`} stroke="#ef4444" strokeWidth={13} strokeLinecap="round" />}
+          {showGuide && <Path d={`M ${step.start.x} ${step.start.y} L ${step.start.x + 0.1} ${step.start.y + 0.1}`} stroke="#22c55e" strokeWidth={13} strokeLinecap="round" />}
+          {showGuide && <Path d={`M ${step.end.x} ${step.end.y} L ${step.end.x + 0.1} ${step.end.y + 0.1}`} stroke="#ef4444" strokeWidth={13} strokeLinecap="round" />}
           {strokes.map((item, i) => item.fill ? <Path key={i} d={item.path} fill={t.primary} opacity={0.95} /> : <Path key={i} d={item.path} stroke={t.primary} strokeWidth={18} strokeLinecap="round" strokeLinejoin="round" fill="none" />)}
           {!!draft && <Path d={draft} stroke={t.primary} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.8} />}
         </Svg>
         {animX && animY && <Animated.View style={[styles.animDot, { backgroundColor: t.primary, transform: [{ translateX: animX }, { translateY: animY }] }]} />}
       </View>
-      {!guide && <Text style={[styles.fallback, { color: t.sub, fontFamily: t.font }]}>Guide belum ada</Text>}
+      {!guide && <Text style={[styles.fallback, { color: t.sub, fontFamily: t.font }]}>Guide belum ada · free draw dihitung benar</Text>}
     </View>
   );
 }
@@ -118,8 +123,11 @@ function smoothPath(points: Point[]) {
   return parts.join(' ');
 }
 
-function touchPoint(pageX: number, pageY: number, offset: { x: number; y: number }, height: number) {
-  return { x: clamp(pageX - offset.x, 0, 320), y: clamp(pageY - offset.y, 0, height) };
+function touchPoint(x: number, y: number, size: { width: number; height: number }) {
+  return {
+    x: clamp((x / size.width) * 320, 0, 320),
+    y: clamp((y / size.height) * size.height, 0, size.height)
+  };
 }
 
 function clamp(value: number, min: number, max: number) {

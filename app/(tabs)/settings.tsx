@@ -5,9 +5,10 @@ import * as Sharing from 'expo-sharing';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { allVocab, getProfile, initDb, insertMany, quizStats, resetDefaultVocab, saveProfile } from '../../src/db';
+import { allVocab, getProfile, getProfileValue, initDb, insertMany, quizStats, resetDefaultVocab, saveProfile, saveProfileValue } from '../../src/db';
 import { parseCsv, toCsv } from '../../src/csv';
 import { useTheme, useThemeMode } from '../../src/theme';
+import { clearVoiceCache, listJapaneseVoices, speakJapanese } from '../../src/speech';
 import type { VocabItem } from '../../src/types';
 
 export default function ProfileScreen() {
@@ -17,12 +18,16 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState({ username: 'Dimas', avatar: 'D', avatarUri: '' });
   const [selectedDay, setSelectedDay] = useState<{ date: string; count: number } | null>(null);
   const [stats, setStats] = useState({ attempts: 0, bestScore: 0, bestTotal: 0, answered: 0 });
+  const [voices, setVoices] = useState<Awaited<ReturnType<typeof listJapaneseVoices>>>([]);
+  const [voiceId, setVoiceId] = useState('');
 
   const load = useCallback(() => {
     initDb();
     setItems(allVocab());
     setProfile(getProfile());
     setStats(quizStats());
+    setVoiceId(getProfileValue('ttsVoiceId'));
+    listJapaneseVoices().then(setVoices).catch(() => setVoices([]));
   }, []);
 
   useFocusEffect(load);
@@ -68,13 +73,14 @@ export default function ProfileScreen() {
     ]);
   }
 
-  const userItems = items.filter((item) => item.source === 'user');
+  const progress = getProgress(items);
+  const userItems = progress.userItems;
   const contributions = contributionDays(userItems);
+  const contribList = contributionList(userItems);
   const totalContrib = userItems.length;
 
   return (
     <ScrollView style={[styles.wrap, { backgroundColor: t.bg }]} contentContainerStyle={{ paddingBottom: 108 }}>
-      <Text style={[styles.title, { color: t.text, fontFamily: t.font }]}>Profile</Text>
       <View style={[styles.profileCard, { backgroundColor: t.card, borderColor: t.border }]}>
         <Pressable style={styles.avatar} onPress={pickAvatar}>
           {profile.avatarUri ? <Image source={{ uri: profile.avatarUri }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{profile.avatar}</Text>}
@@ -93,7 +99,7 @@ export default function ProfileScreen() {
         <Stat label="Soal dijawab" value={`${stats.answered}`} />
         <Stat label="Total kotoba" value={`${items.length}`} />
         <Stat label="Kotoba user" value={`${userItems.length}`} />
-        <Stat label="Bab" value={`${new Set(items.map((item) => item.group).filter(Boolean)).size}`} />
+        <Stat label="Bab" value={`${progress.groups}`} />
       </View>
 
       <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Contribution</Text>
@@ -105,12 +111,22 @@ export default function ProfileScreen() {
       {selectedDay && <Text style={[styles.selectedDay, { color: t.text, fontFamily: t.font }]}>{formatDate(selectedDay.date)} · {selectedDay.count} kontribusi</Text>}
 
       <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Contribution list</Text>
-      {contributionList(userItems).length === 0 ? <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Belum ada kontribusi. Tambah kotoba dulu, jangan cuma niat.</Text> : contributionList(userItems).map((item) => (
+      {contribList.length === 0 ? <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Belum ada kontribusi. Tambah kotoba dulu, jangan cuma niat.</Text> : contribList.map((item) => (
         <View key={item.date} style={[styles.contribRow, { backgroundColor: t.card, borderColor: t.border }]}>
           <Text style={[styles.contribDate, { color: t.text, fontFamily: t.font }]}>{item.date}</Text>
           <Text style={[styles.contribText, { color: t.sub, fontFamily: t.font }]}>{item.count} kotoba</Text>
         </View>
       ))}
+
+      <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Japanese voice</Text>
+      <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Pilih yang suaranya sama kayak Google TTS. Tap voice buat tes + simpan.</Text>
+      {voices.length === 0 ? <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Voice Jepang belum kebaca. Install Japanese voice pack dulu.</Text> : voices.map((voice) => (
+        <Pressable key={voice.identifier} style={[styles.voiceRow, { backgroundColor: voiceId === voice.identifier ? t.primary : t.card, borderColor: t.border }]} onPress={() => { saveProfileValue('ttsVoiceId', voice.identifier); clearVoiceCache(); setVoiceId(voice.identifier); speakJapanese('こんにちは'); }}>
+          <Text style={[styles.voiceName, { color: voiceId === voice.identifier ? 'white' : t.text, fontFamily: t.font }]} numberOfLines={1}>{voice.name || voice.identifier}</Text>
+          <Text style={[styles.voiceMeta, { color: voiceId === voice.identifier ? 'rgba(255,255,255,0.78)' : t.sub, fontFamily: t.font }]} numberOfLines={1}>{voice.language} · {voice.quality} · {voice.identifier}</Text>
+        </Pressable>
+      ))}
+      <Button label="Tes voice sekarang" onPress={() => speakJapanese('こんにちは。私は日本語を勉強しています。')} />
 
       <Text style={[styles.sectionTitle, { color: t.text, fontFamily: t.font }]}>Theme</Text>
       <View style={styles.themeRow}>
@@ -128,6 +144,16 @@ export default function ProfileScreen() {
 }
 
 const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function getProgress(items: VocabItem[]) {
+  const userItems: VocabItem[] = [];
+  const groups = new Set<string>();
+  for (const item of items) {
+    if (item.source === 'user') userItems.push(item);
+    if (item.group) groups.add(item.group);
+  }
+  return { userItems, groups: groups.size };
+}
 
 function contributionDays(items: VocabItem[]) {
   const counts = new Map(contributionList(items).map((item) => [item.date, item.count]));
@@ -234,6 +260,9 @@ const styles = StyleSheet.create({
   contribRow: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'transparent', padding: 12, borderRadius: 14, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 8 },
   contribDate: { color: '#0f172a', fontWeight: '800' },
   contribText: { color: '#64748b', fontWeight: '700' },
+  voiceRow: { borderWidth: 1, borderRadius: 14, padding: 12, marginBottom: 8 },
+  voiceName: { fontSize: 15, fontWeight: '900' },
+  voiceMeta: { fontSize: 12, fontWeight: '700', marginTop: 3 },
   button: { backgroundColor: '#2563eb', padding: 14, borderRadius: 14, marginBottom: 12, alignItems: 'center' },
   danger: { backgroundColor: '#dc2626' },
   buttonText: { color: 'white', fontWeight: '800' },

@@ -11,7 +11,7 @@ import { useTheme } from '../../src/theme';
 import type { VocabItem } from '../../src/types';
 
 type Mode = 'number-ja' | 'number-id' | 'kana-meaning' | 'kana-romaji' | 'meaning-kana' | 'letter-romaji' | 'kana-letter';
-type Question = { prompt: string; answer: string; alt?: string; kind: 'number' | 'kana' | 'letter'; inputKana?: boolean; inputScript?: 'hiragana' | 'katakana' };
+type Question = { prompt: string; answer: string; alt?: string; kind: 'number' | 'kana' | 'letter'; mode: Mode; inputKana?: boolean; inputScript?: 'hiragana' | 'katakana' };
 type Wrong = Question & { given: string };
 
 const numberLevels = [10, 100, 1000, 10000, 100000];
@@ -52,6 +52,7 @@ export default function QuizScreen() {
   }, []));
 
   const current = questions[index];
+  const currentMode = current?.mode ?? mode;
 
   function start() {
     const quizVocab = isNumberMode(mode) || isLetterMode(mode) || selectedGroups.length === 0 ? vocab : vocab.filter((item) => selectedGroups.includes(item.group));
@@ -165,7 +166,6 @@ export default function QuizScreen() {
 
   return (
     <ScrollView style={[styles.wrap, { backgroundColor: t.bg }]} contentContainerStyle={{ paddingBottom: 108 }}>
-      <Text style={[styles.title, { color: t.text, fontFamily: t.font }]}>Quiz</Text>
 
       {!current ? (
         <>
@@ -208,10 +208,11 @@ export default function QuizScreen() {
         </>
       ) : (
         <>
-          <Text style={[styles.modeTitle, { color: t.text, fontFamily: t.font }]}>{modeLabel(mode)} · campur {selectedModes.length || 1} mode</Text>
+          <Text style={[styles.modeTitle, { color: t.text, fontFamily: t.font }]}>{modeLabel(currentMode)} · campur {selectedModes.length || 1} mode</Text>
           <Text style={[styles.count, { color: t.sub, fontFamily: t.font }]}>{index + 1} / {questions.length}</Text>
+          <Text style={[styles.instruction, { color: t.primary, fontFamily: t.font }]}>{modeInstruction(currentMode)}</Text>
           <View style={[styles.bigCard, { backgroundColor: t.card, borderColor: t.border }]}><Text style={[styles.bigPrompt, { color: t.text, fontFamily: t.font }]}>{current.prompt}</Text></View>
-          {mode === 'kana-letter' ? <>
+          {currentMode === 'kana-letter' ? <>
             <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Gambar huruf Jepang di atas. Guide kuning muncul otomatis setelah 5× meleset. Nilai ngikut waktu + jumlah miss.</Text>
             <KanaStrokePad char={current.answer} misses={drawMisses} onMiss={missDrawing} onCorrect={passDrawing} height={300} />
             <Text style={[styles.meta, { color: t.sub, fontFamily: t.font }]}>Miss: {drawMisses} / 5 sebelum guide muncul</Text>
@@ -245,22 +246,22 @@ function buildQuestions(mode: Mode, total: number, level: number, vocab: VocabIt
       const ja = numberToJapanese(value);
       const kana = romajiToKana(ja, 'hiragana', true);
       return mode === 'number-ja'
-        ? { prompt: String(value), answer: kana, alt: ja, kind: 'number' as const, inputKana: true, inputScript: 'hiragana' as const }
-        : { prompt: kana, answer: String(value), kind: 'number' as const };
+        ? { prompt: String(value), answer: kana, alt: ja, kind: 'number' as const, mode, inputKana: true, inputScript: 'hiragana' as const }
+        : { prompt: kana, answer: String(value), kind: 'number' as const, mode };
     })).slice(0, total);
   }
 
   if (mode === 'letter-romaji' || mode === 'kana-letter') {
     const items = selectedKanaGroups.length ? kanaItems(letterScript).filter((item) => selectedKanaGroups.includes(item.group)) : kanaItems(letterScript);
     return shuffled(items).slice(0, total).map((item) => mode === 'letter-romaji'
-      ? { prompt: item.kana, answer: item.romaji, kind: 'letter' as const }
-      : { prompt: item.kana, answer: item.kana, alt: item.romaji, kind: 'letter' as const, inputKana: true, inputScript: letterScript });
+      ? { prompt: item.kana, answer: item.romaji, kind: 'letter' as const, mode }
+      : { prompt: item.kana, answer: item.kana, alt: item.romaji, kind: 'letter' as const, mode, inputKana: true, inputScript: letterScript });
   }
 
   return shuffled(vocab).slice(0, total).map((item) => {
-    if (mode === 'kana-meaning') return { prompt: item.kana, answer: item.meaning_id, kind: 'kana' as const };
-    if (mode === 'kana-romaji') return { prompt: item.kana, answer: item.romaji, kind: 'kana' as const };
-    return { prompt: item.meaning_id, answer: item.kana, alt: item.romaji, kind: 'kana' as const, inputKana: true, inputScript: item.script_type };
+    if (mode === 'kana-meaning') return { prompt: item.kana, answer: item.meaning_id, kind: 'kana' as const, mode };
+    if (mode === 'kana-romaji') return { prompt: item.kana, answer: item.romaji, kind: 'kana' as const, mode };
+    return { prompt: item.meaning_id, answer: item.kana, alt: item.romaji, kind: 'kana' as const, mode, inputKana: true, inputScript: item.script_type };
   });
 }
 
@@ -288,6 +289,16 @@ function groupProgress(vocab: VocabItem[]) {
 
 function modeLabel(value: Mode) {
   return modes.find((item) => item.value === value)?.label ?? 'Quiz';
+}
+
+function modeInstruction(value: Mode) {
+  if (value === 'number-ja') return 'Tugas: angka → Jepang. Ketik romaji, otomatis jadi hiragana.';
+  if (value === 'number-id') return 'Tugas: Jepang → angka. Ketik angka biasa.';
+  if (value === 'kana-meaning') return 'Tugas: Jepang → arti Indonesia.';
+  if (value === 'kana-romaji') return 'Tugas: Jepang → romaji.';
+  if (value === 'meaning-kana') return 'Tugas: arti Indonesia → Jepang. Ketik romaji, otomatis jadi kana.';
+  if (value === 'letter-romaji') return 'Tugas: huruf Jepang → romaji.';
+  return 'Tugas: gambar huruf Jepang sesuai prompt.';
 }
 
 function shuffled<T>(items: T[]) {
@@ -320,7 +331,8 @@ const styles = StyleSheet.create({
   buttonText: { color: 'white', fontWeight: '800' },
   note: { color: '#64748b', marginTop: 12, lineHeight: 20 },
   modeTitle: { color: '#0f172a', fontWeight: '800', marginBottom: 4 },
-  count: { color: '#64748b', marginBottom: 12 },
+  count: { color: '#64748b', marginBottom: 8 },
+  instruction: { fontWeight: '800', marginBottom: 12, lineHeight: 20 },
   bigCard: { minHeight: 220, borderRadius: 24, backgroundColor: 'transparent', borderWidth: 1, borderColor: '#e2e8f0', alignItems: 'center', justifyContent: 'center', padding: 24, marginBottom: 16 },
   bigPrompt: { fontSize: 42, fontWeight: '900', color: '#111827', textAlign: 'center' },
   input: { backgroundColor: 'transparent', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#e2e8f0' },

@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { initDb, listGroups, listVocab, setReviewStatus } from '../../src/db';
 import { useTheme } from '../../src/theme';
+import { speakJapanese } from '../../src/speech';
 import type { VocabItem } from '../../src/types';
 
 export default function FlashcardScreen() {
@@ -70,6 +71,7 @@ export default function FlashcardScreen() {
       ) : (
         <>
           <Pressable style={[styles.card, { backgroundColor: t.card, borderColor: t.border }]} onPress={() => setRevealed(!revealed)}>
+            <Pressable style={[styles.speakButton, { backgroundColor: t.card2 }]} onPress={() => speakJapanese(item.kana)}><Text style={[styles.speakText, { color: t.primary }]}>▶</Text></Pressable>
             <Text style={[styles.kana, { color: t.text, fontFamily: t.font }]}>{item.kana}</Text>
             {revealed ? (
               <View style={styles.answerBox}>
@@ -123,6 +125,8 @@ const styles = StyleSheet.create({
   studyActions: { flexDirection: 'row', gap: 8 },
   count: { color: '#64748b' },
   card: { minHeight: 280, borderRadius: 24, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center', padding: 24, borderWidth: 1, borderColor: '#e2e8f0' },
+  speakButton: { position: 'absolute', top: 16, right: 16, width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  speakText: { fontSize: 16, fontWeight: '900' },
   kana: { fontSize: 48, fontWeight: '900', color: '#111827', textAlign: 'center' },
   answerBox: { marginTop: 24, alignItems: 'center' },
   romaji: { fontSize: 20, color: '#64748b', marginBottom: 8, textAlign: 'center' },

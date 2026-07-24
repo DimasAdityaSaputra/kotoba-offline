@@ -3,8 +3,10 @@ import { DEFAULT_VOCAB } from './seed';
 import type { SourceType, VocabFilters, VocabInput, VocabItem } from './types';
 
 const db = SQLite.openDatabaseSync('kotoba.db');
+let initialized = false;
 
 export function initDb() {
+  if (initialized) return;
   db.execSync(`
     CREATE TABLE IF NOT EXISTS vocab (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,6 +41,7 @@ export function initDb() {
 
   const count = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM vocab WHERE source = ?', 'default')?.count ?? 0;
   if (count === 0) insertMany(DEFAULT_VOCAB, 'default');
+  initialized = true;
 }
 
 function insertRows(items: VocabInput[], source: SourceType, now: string) {
