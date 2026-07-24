@@ -246,13 +246,13 @@ function buildMixedQuestions(modes: Mode[], total: number, level: number, vocab:
 
 function buildQuestions(mode: Mode, total: number, level: number, vocab: VocabItem[], letterScript: KanaScript, selectedKanaGroups: string[]): Question[] {
   if (mode === 'number-ja' || mode === 'number-id') {
-    return shuffled(Array.from({ length: level + 1 }, (_, value) => {
+    return randomNumbers(level, total).map((value) => {
       const ja = numberToJapanese(value);
       const kana = romajiToKana(ja, 'hiragana', true);
       return mode === 'number-ja'
         ? { prompt: String(value), answer: kana, alt: ja, kind: 'number' as const, mode, inputKana: true, inputScript: 'hiragana' as const }
         : { prompt: kana, answer: String(value), kind: 'number' as const, mode };
-    })).slice(0, total);
+    });
   }
 
   if (mode === 'letter-romaji' || mode === 'kana-letter') {
@@ -303,6 +303,13 @@ function modeInstruction(value: Mode) {
   if (value === 'meaning-kana') return 'Tugas: arti Indonesia → Jepang. Ketik romaji, otomatis jadi kana.';
   if (value === 'letter-romaji') return 'Tugas: huruf Jepang → romaji.';
   return 'Tugas: gambar huruf Jepang sesuai prompt.';
+}
+
+function randomNumbers(max: number, total: number) {
+  const picked = new Set<number>();
+  const limit = Math.min(total, max + 1);
+  while (picked.size < limit) picked.add(Math.floor(Math.random() * (max + 1)));
+  return [...picked];
 }
 
 function shuffled<T>(items: T[]) {
