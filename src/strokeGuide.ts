@@ -14,8 +14,8 @@ export function guideForKana(char: string) {
   const parts = [...char].map((item) => strokeGuides[item]);
   if (parts.length !== 2 || parts.some((item) => !item)) return undefined;
   return [
-    ...fitGuide(parts[0]!, { x: 18, y: 28, width: 184, height: 246 }),
-    ...fitGuide(parts[1]!, { x: 188, y: 116, width: 106, height: 142 })
+    ...fitGuide(parts[0]!, { x: 8, y: 24, width: 136, height: 244 }),
+    ...fitGuide(parts[1]!, { x: 196, y: 120, width: 88, height: 126 })
   ];
 }
 
