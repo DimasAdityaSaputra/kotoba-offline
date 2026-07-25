@@ -13,9 +13,10 @@ export function guideForKana(char: string) {
   if (direct) return direct;
   const parts = [...char].map((item) => strokeGuides[item]);
   if (parts.length !== 2 || parts.some((item) => !item)) return undefined;
+  const lineOnly = ['み', 'ミ'].includes([...char][0]);
   return [
-    ...fitGuide(parts[0]!, { x: 8, y: 24, width: 136, height: 244 }),
-    ...fitGuide(parts[1]!, { x: 196, y: 120, width: 88, height: 126 })
+    ...fitGuide(parts[0]!, { x: 8, y: 24, width: 136, height: 244 }, !lineOnly),
+    ...fitGuide(parts[1]!, { x: 196, y: 120, width: 88, height: 126 }, !lineOnly)
   ];
 }
 
@@ -34,14 +35,14 @@ export function judgeStroke(points: Point[], step: StrokeStep) {
   return startOk && endOk && lengthOk && directionOk && shapeOk;
 }
 
-function fitGuide(guide: StrokeStep[], box: { x: number; y: number; width: number; height: number }) {
+function fitGuide(guide: StrokeStep[], box: { x: number; y: number; width: number; height: number }, keepFill: boolean) {
   const bounds = guideBounds(guide);
   const sourceWidth = bounds.maxX - bounds.minX || 1;
   const sourceHeight = bounds.maxY - bounds.minY || 1;
   const scale = Math.min(box.width / sourceWidth, box.height / sourceHeight);
   const dx = box.x + (box.width - sourceWidth * scale) / 2 - bounds.minX * scale;
   const dy = box.y + (box.height - sourceHeight * scale) / 2 - bounds.minY * scale;
-  return guide.map((step) => transformStep(step, scale, dx, dy));
+  return guide.map((step) => transformStep(step, scale, dx, dy, keepFill));
 }
 
 function guideBounds(guide: StrokeStep[]) {
@@ -51,12 +52,12 @@ function guideBounds(guide: StrokeStep[]) {
   return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
 }
 
-function transformStep(step: StrokeStep, scale: number, dx: number, dy: number): StrokeStep {
+function transformStep(step: StrokeStep, scale: number, dx: number, dy: number, keepFill: boolean): StrokeStep {
   const point = (p: Point) => ({ x: p.x * scale + dx, y: p.y * scale + dy });
   return {
     ...step,
     path: smoothStrokePath(step.points?.map(point) ?? parsePathPoints(transformPath(step.path, scale, dx, dy))),
-    fillPaths: step.fillPaths?.map((path) => transformPath(path, scale, dx, dy)),
+    fillPaths: keepFill ? step.fillPaths?.map((path) => transformPath(path, scale, dx, dy)) : undefined,
     points: step.points?.map(point),
     start: point(step.start),
     end: point(step.end)
