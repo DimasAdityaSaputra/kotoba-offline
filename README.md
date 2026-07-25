@@ -1,112 +1,77 @@
 # Kotoba Offline v2
 
-Offline Android app buat belajar bahasa Jepang dasar: kotoba, kana, angka Jepang, kanji basic, flashcard, quiz, dan latihan tulis. Semua data utama jalan lokal/offline pakai SQLite.
+Belajar bahasa Jepang dasar tanpa ribet internet. Kotoba Offline adalah APK Android offline untuk latihan kosakata, kana, angka Jepang, kanji basic, flashcard, quiz, dan menulis huruf Jepang.
 
-## Apa yang berubah dari app versi 1
+Data utama disimpan lokal di device. Cocok buat belajar pelan-pelan, nambah kosakata sendiri, dan latihan harian tanpa akun.
 
-Versi 1 fokus ke pondasi:
+## Highlight v2
 
-- kosakata hiragana/katakana offline
-- flashcard
-- tambah/import/export kotoba
-- quiz dasar
-- latihan tulis kana dengan data stroke animCJK
-- profile, progress, dark mode, floating dock
-
-Versi 2 nambah dan ngerapihin bagian yang paling kerasa dipakai:
-
-- Kanji basic masuk menu Kotoba, bareng Basic/Huruf/Nomor.
-- Kanji dipisah kategori: Semua, Nomor, Hari/alam, Orang, Alam, Ukuran.
-- Kanji card punya arti, onyomi, kunyomi, contoh kata, dan catatan pemakaian pendek.
-- Write screen punya filter group kana: a, ka, sa, ta, dan seterusnya.
-- Compound kana seperti kya/gya/mya bisa latihan auto-correct dalam satu kotak.
-- Drawing dua jari di-ignore supaya canvas tidak menggambar garis aneh.
-- Stroke user yang benar sekarang morph ke stroke target, lalu animasi masuk ke fill asli.
-- Stroke biru/draft ditipisin supaya tidak kelihatan seperti stabilo brutal.
-- Progress harian balik stabil: quiz benar dan tambah kotoba user masuk progress.
-- Progress target 30/hari dengan tier warna biru.
-- Quiz Jepang → romaji diperbaiki, contoh `byouin` diterima tanpa harus input `byouinn`.
-- Add Kotoba sekarang bisa pilih Group/Bab yang sudah ada.
-- Profile lebih bersih: ganti foto cukup tap avatar, field bawah jadi Bio.
-- Migrasi DB lama diperbaiki supaya app tidak force close setelah update.
+- **Kanji basic** sekarang masuk menu belajar bareng Kotoba, Basic, Huruf, dan Nomor.
+- **Kategori Kanji** dipisah: Semua, Nomor, Hari/alam, Orang, Alam, Ukuran.
+- **Penjelasan Kanji** dibuat ramah pemula: arti, onyomi, kunyomi, contoh kata, dan catatan pemakaian.
+- **Write training lebih enak**: filter group kana, perbaikan compound kana, single-touch drawing, dan animasi stroke correction.
+- **Progress harian** lebih jelas dengan target 30/hari dan tier warna biru.
+- **Quiz romaji diperbaiki**, termasuk jawaban seperti `byouin`.
+- **Add Kotoba lebih praktis** dengan pilihan Group/Bab yang sudah ada.
+- **Profile lebih bersih**: tap avatar buat ganti foto, tambah bio.
+- **Database migration diperbaiki** supaya update app lebih aman dari force close.
 
 ## Fitur utama
 
-- Offline SQLite storage
-- Default vocabulary seed N5/N4-ish
-- Kotoba library dengan search, filter, edit user vocab, dan group/bab
-- Add Kotoba dengan romaji → kana converter
-- Flashcard memorization
-- Quiz: angka, kotoba, huruf/kana, mixed practice
-- Write training: kana stroke guide, group filter, auto-correct, morph animation
-- Kanji basic: arti, onyomi, kunyomi, contoh kata, kategori
+- Offline Android APK
+- Kosakata Jepang dasar bawaan
+- Tambah kosakata sendiri
+- Group/Bab kosakata
+- Search dan filter kotoba
+- Flashcard
+- Quiz angka, kotoba, huruf/kana, dan latihan campuran
+- Latihan tulis kana dengan stroke guide
+- Auto-correct stroke dengan animasi morph/fill
+- Kanji basic dengan kategori
 - Basic Japanese lesson cards
-- Progress dashboard dan contribution graph
+- Progress harian dan contribution graph
 - Profile avatar + bio
 - CSV import/export
-- Backup/restore JSON
-- Japanese TTS voice selection
+- Backup/restore data
+- Japanese text-to-speech
 - Dark mode
-- Floating bottom dock
 
-## Kanji basic yang tersedia
+## Apa bedanya dari versi 1?
 
-Kategori awal masih basic, bukan kamus penuh:
+Versi 1 sudah jadi fondasi aplikasi belajar Jepang offline: kosakata, flashcard, quiz, latihan tulis kana, profile, progress, dark mode, import/export.
 
-- Nomor: 一 二 三 四 五 六 七 八 九 十
-- Hari/alam: 日 月 火 水 木 金 土
-- Orang: 人 子 女 男
-- Alam: 山 川
-- Ukuran/posisi: 大 小 中
+Versi 2 fokus ke polish dan materi belajar:
 
-Kanji di app dijelasin pakai pola simpel:
+- Kanji basic ditambahkan.
+- Menu belajar lebih lengkap.
+- Write screen lebih halus dan lebih stabil.
+- Progress belajar lebih kelihatan.
+- Form tambah kotoba lebih cepat dipakai.
+- Profile lebih rapi.
+- Crash dari database lama diperbaiki.
 
-- bentuk kanji
+Singkatnya: versi 1 bisa dipakai, versi 2 lebih nyaman dipakai tiap hari.
+
+## Materi Kanji awal
+
+Kanji awal masih basic, bukan kamus penuh.
+
+- **Nomor:** 一 二 三 四 五 六 七 八 九 十
+- **Hari/alam:** 日 月 火 水 木 金 土
+- **Orang:** 人 子 女 男
+- **Alam:** 山 川
+- **Ukuran:** 大 小 中
+
+Setiap Kanji berisi:
+
+- huruf Kanji
 - arti Indonesia
-- onyomi: bacaan China-Jepang, sering dipakai di gabungan kanji
-- kunyomi: bacaan Jepang asli, sering dipakai saat kanji berdiri sendiri atau pakai okurigana
-- contoh kata biar bacaan tidak dihafal kosong
+- onyomi
+- kunyomi
+- contoh kata
+- catatan pemakaian singkat
 
-## Run development
-
-```bash
-npm install
-npm run start
-```
-
-Open with Expo Go on Android, atau press `a` kalau Android emulator ready.
-
-## Checks
-
-```bash
-npm run selfcheck
-npm run typecheck
-```
-
-## Build Android release
-
-WSL setup yang dipakai project ini:
-
-```bash
-cd android
-JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 \
-ANDROID_HOME=/mnt/c/Users/dimas/AppData/Local/Android/Sdk \
-./gradlew assembleRelease
-```
-
-APK output:
-
-```text
-android/app/build/outputs/apk/release/app-release.apk
-```
-
-Install ke device lokal:
-
-```bash
-/mnt/c/Users/dimas/AppData/Local/Android/Sdk/platform-tools/adb.exe install -r android/app/build/outputs/apk/release/app-release.apk
-```
-
-## CSV format
+## Format CSV import
 
 ```csv
 kana,romaji,meaning_id,category,jlpt_level,script_type,group
@@ -114,12 +79,8 @@ kana,romaji,meaning_id,category,jlpt_level,script_type,group
 コーヒー,koohii,kopi,food,N5,katakana,bab 1
 ```
 
-Valid `jlpt_level`: `N5`, `N4`, `uncategorized`.
+`group` boleh kosong. App tetap jalan.
 
-Valid `script_type`: `hiragana`, `katakana`.
+## Catatan lisensi
 
-`group` optional. Kalau kosong, app tetap jalan.
-
-## License notes
-
-Kana stroke data uses animCJK-derived data. Keep `NOTICE.md` and `licenses/animCJK-LGPL-3.0.txt` with releases.
+Kana stroke data memakai data turunan animCJK. File `NOTICE.md` dan lisensi animCJK tetap disertakan di project.
