@@ -21,7 +21,7 @@ export default function WriteScreen() {
   const [draft, setDraft] = useState('');
   const [message, setMessage] = useState('Ikuti stroke terang. Titik hijau = mulai, merah = akhir.');
   const [showAnimation, setShowAnimation] = useState(true);
-  const [snap, setSnap] = useState<{ path: string; to: { path: string; fill?: boolean }[] } | null>(null);
+  const [snap, setSnap] = useState<{ path: string; to: { path: string; fill?: boolean }[]; fillOpacity: number } | null>(null);
   const anim = useRef(new Animated.Value(0)).current;
   const snapAnim = useRef(new Animated.Value(0)).current;
   const draftRef = useRef('');
@@ -91,11 +91,15 @@ export default function WriteScreen() {
       const done = step.fillPaths?.length ? step.fillPaths.map((path) => ({ path, fill: true })) : [{ path: step.path }];
       const from = resamplePoints(points, 18);
       const to = resamplePoints(step.points ?? parsePathPoints(step.path), 18);
-      setSnap({ path: smoothPath(from), to: done });
+      setSnap({ path: smoothPath(from), to: done, fillOpacity: 0 });
       snapAnim.stopAnimation();
       snapAnim.setValue(0);
-      const listener = snapAnim.addListener(({ value }) => setSnap({ path: smoothPath(mixPoints(from, to, value)), to: done }));
-      Animated.timing(snapAnim, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => {
+      const listener = snapAnim.addListener(({ value }) => {
+        const morph = Math.min(1, value / 0.68);
+        const fillOpacity = Math.max(0, (value - 0.68) / 0.32);
+        setSnap({ path: smoothPath(mixPoints(from, to, morph)), to: done, fillOpacity });
+      });
+      Animated.timing(snapAnim, { toValue: 1, duration: 360, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => {
         snapAnim.removeListener(listener);
         setSnap(null);
         setStrokes((current) => [...current, ...done]);
@@ -178,7 +182,8 @@ export default function WriteScreen() {
             {step && <Path d={`M ${step.start.x} ${step.start.y} L ${step.start.x + 0.1} ${step.start.y + 0.1}`} stroke="#22c55e" strokeWidth={14} strokeLinecap="round" />}
             {step && <Path d={`M ${step.end.x} ${step.end.y} L ${step.end.x + 0.1} ${step.end.y + 0.1}`} stroke="#ef4444" strokeWidth={14} strokeLinecap="round" />}
             {strokes.map((item, i) => item.fill ? <Path key={i} d={item.path} fill={t.primary} opacity={0.95} /> : <Path key={i} d={item.path} stroke={t.primary} strokeWidth={10} strokeLinecap="round" strokeLinejoin="round" fill="none" />)}
-            {snap && <Path d={snap.path} stroke={t.primary} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.9} />}
+            {snap?.to.map((item, i) => item.fill ? <Path key={`snap-fill-${i}`} d={item.path} fill={t.primary} opacity={snap.fillOpacity * 0.95} /> : null)}
+            {snap && <Path d={snap.path} stroke={t.primary} strokeWidth={7 + snap.fillOpacity * 5} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.9 - snap.fillOpacity * 0.55} />}
             {!!draft && !snap && <Path d={draft} stroke={t.primary} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.8} />}
             {showAnimation && animX && animY && <AnimatedCircle cx={animX} cy={animY} r={7} fill={t.primary} />}
           </Svg>
