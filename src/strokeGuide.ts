@@ -45,9 +45,9 @@ function fitGuide(guide: StrokeStep[], box: { x: number; y: number; width: numbe
 }
 
 function guideBounds(guide: StrokeStep[]) {
-  const points = guide.flatMap((step) => [step.start, step.end, ...(step.points ?? parsePathPoints(step.path))]);
-  const xs = points.map((point) => point.x);
-  const ys = points.map((point) => point.y);
+  const nums = guide.flatMap((step) => [step.path, ...(step.fillPaths ?? [])].flatMap((path) => [...path.matchAll(/-?\d+(?:\.\d+)?/g)].map((m) => Number(m[0]))));
+  const xs = nums.filter((_, index) => index % 2 === 0);
+  const ys = nums.filter((_, index) => index % 2 === 1);
   return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
 }
 
@@ -56,7 +56,7 @@ function transformStep(step: StrokeStep, scale: number, dx: number, dy: number):
   return {
     ...step,
     path: smoothStrokePath(step.points?.map(point) ?? parsePathPoints(transformPath(step.path, scale, dx, dy))),
-    fillPaths: undefined,
+    fillPaths: step.fillPaths?.map((path) => transformPath(path, scale, dx, dy)),
     points: step.points?.map(point),
     start: point(step.start),
     end: point(step.end)
