@@ -174,10 +174,10 @@ export default function WriteScreen() {
             )}
             {step && <Path d={`M ${step.start.x} ${step.start.y} L ${step.start.x + 0.1} ${step.start.y + 0.1}`} stroke="#22c55e" strokeWidth={14} strokeLinecap="round" />}
             {step && <Path d={`M ${step.end.x} ${step.end.y} L ${step.end.x + 0.1} ${step.end.y + 0.1}`} stroke="#ef4444" strokeWidth={14} strokeLinecap="round" />}
-            {strokes.map((item, i) => item.fill ? <Path key={i} d={item.path} fill={t.primary} opacity={0.95} /> : <Path key={i} d={item.path} stroke={t.primary} strokeWidth={18} strokeLinecap="round" strokeLinejoin="round" fill="none" />)}
-            {snap?.to.map((item, i) => item.fill ? <AnimatedPath key={`snap-to-${i}`} d={item.path} fill={t.primary} opacity={correctOpacity} /> : <AnimatedPath key={`snap-to-${i}`} d={item.path} stroke={t.primary} strokeWidth={18} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={correctOpacity} />)}
-            {snap && <AnimatedPath d={snap.from} stroke={t.primary} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={snapOpacity} />}
-            {!!draft && !snap && <Path d={draft} stroke={t.primary} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.8} />}
+            {strokes.map((item, i) => item.fill ? <Path key={i} d={item.path} fill={t.primary} opacity={0.95} /> : <Path key={i} d={item.path} stroke={t.primary} strokeWidth={10} strokeLinecap="round" strokeLinejoin="round" fill="none" />)}
+            {snap?.to.map((item, i) => item.fill ? <AnimatedPath key={`snap-to-${i}`} d={item.path} fill={t.primary} opacity={correctOpacity} /> : <AnimatedPath key={`snap-to-${i}`} d={item.path} stroke={t.primary} strokeWidth={10} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={correctOpacity} />)}
+            {snap && <AnimatedPath d={snap.from} stroke={t.primary} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={snapOpacity} />}
+            {!!draft && !snap && <Path d={draft} stroke={t.primary} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.8} />}
             {showAnimation && animX && animY && <AnimatedCircle cx={animX} cy={animY} r={7} fill={t.primary} />}
           </Svg>
         </View>
