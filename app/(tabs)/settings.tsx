@@ -15,7 +15,7 @@ export default function ProfileScreen() {
   const t = useTheme();
   const { mode, setMode } = useThemeMode();
   const [items, setItems] = useState<VocabItem[]>([]);
-  const [profile, setProfile] = useState({ username: 'Dimas', avatar: 'D', avatarUri: '' });
+  const [profile, setProfile] = useState({ username: 'Dimas', avatar: 'D', avatarUri: '', bio: '' });
   const [selectedDay, setSelectedDay] = useState<{ date: string; count: number } | null>(null);
   const [stats, setStats] = useState({ attempts: 0, bestScore: 0, bestTotal: 0, answered: 0 });
   const [voices, setVoices] = useState<Awaited<ReturnType<typeof listJapaneseVoices>>>([]);
@@ -109,8 +109,7 @@ export default function ProfileScreen() {
         </Pressable>
         <View style={{ flex: 1 }}>
           <TextInput placeholderTextColor={t.sub} style={[styles.usernameInput, { color: t.text, fontFamily: t.font }]} value={profile.username} onChangeText={(username) => setProfile({ ...profile, username })} onBlur={() => saveProfile(profile)} placeholder="Username" />
-          <TextInput placeholderTextColor={t.sub} style={[styles.avatarInput, { color: t.sub, fontFamily: t.font }]} value={profile.avatar} onChangeText={(avatar) => setProfile({ ...profile, avatar: avatar.slice(0, 2).toUpperCase() })} onBlur={() => saveProfile(profile)} placeholder="Fallback avatar" autoCapitalize="characters" />
-          <Text style={[styles.note, { color: t.sub, fontFamily: t.font }]}>Tap foto buat ganti dari gallery · offline mode</Text>
+          <TextInput placeholderTextColor={t.sub} style={[styles.bioInput, { color: t.sub, fontFamily: t.font }]} value={profile.bio} onChangeText={(bio) => setProfile({ ...profile, bio })} onBlur={() => saveProfile(profile)} placeholder="Bio" multiline />
         </View>
       </View>
 
@@ -246,7 +245,7 @@ const styles = StyleSheet.create({
   avatarImage: { width: 72, height: 72 },
   avatarText: { color: 'white', fontSize: 34, fontWeight: '900' },
   usernameInput: { fontSize: 26, fontWeight: '900', color: '#0f172a', padding: 0 },
-  avatarInput: { color: '#64748b', padding: 0, marginBottom: 2 },
+  bioInput: { padding: 0, marginTop: 2, minHeight: 22 },
   sectionTitle: { fontSize: 20, fontWeight: '900', color: '#0f172a', marginTop: 22, marginBottom: 8 },
   note: { color: '#475569', lineHeight: 20 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

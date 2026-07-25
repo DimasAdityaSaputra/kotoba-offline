@@ -189,15 +189,17 @@ export function getProfile() {
   return {
     username: profile.username || 'Dimas',
     avatar: profile.avatar || 'D',
-    avatarUri: profile.avatarUri || ''
+    avatarUri: profile.avatarUri || '',
+    bio: profile.bio || ''
   };
 }
 
-export function saveProfile(profile: { username: string; avatar: string; avatarUri: string }) {
+export function saveProfile(profile: { username: string; avatar: string; avatarUri: string; bio: string }) {
   db.withTransactionSync(() => {
     db.runSync('INSERT OR REPLACE INTO profile (key, value) VALUES (?, ?)', 'username', profile.username.trim() || 'Dimas');
     db.runSync('INSERT OR REPLACE INTO profile (key, value) VALUES (?, ?)', 'avatar', (profile.avatar.trim() || 'D').slice(0, 2).toUpperCase());
     db.runSync('INSERT OR REPLACE INTO profile (key, value) VALUES (?, ?)', 'avatarUri', profile.avatarUri);
+    db.runSync('INSERT OR REPLACE INTO profile (key, value) VALUES (?, ?)', 'bio', profile.bio.trim());
   });
 }
 
