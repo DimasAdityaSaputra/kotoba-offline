@@ -5,6 +5,7 @@ import { deleteVocab, initDb, listVocab, updateVocab } from '../../src/db';
 import { romajiToKana } from '../../src/kana';
 import { kanaGroups } from '../../src/kanaGroups';
 import { BASIC_DRILLS, BASIC_FLOW, BASIC_LESSONS, BASIC_PATTERNS, BASIC_PHRASES, BASIC_SENTENCES } from '../../src/basicLessons';
+import { basicKanji } from '../../src/kanjiData';
 import { numberToJapanese } from '../../src/numberQuiz';
 import { speakJapanese } from '../../src/speech';
 import { useTheme } from '../../src/theme';
@@ -18,7 +19,7 @@ export default function KotobaScreen() {
   const [filters, setFilters] = useState<VocabFilters>(initialFilters);
   const [items, setItems] = useState<VocabItem[]>([]);
   const [editing, setEditing] = useState<VocabItem | null>(null);
-  const [learnMode, setLearnMode] = useState<'kotoba' | 'number' | 'letter' | 'basic'>('kotoba');
+  const [learnMode, setLearnMode] = useState<'kotoba' | 'number' | 'letter' | 'basic' | 'kanji'>('kotoba');
   const [menuOpen, setMenuOpen] = useState(false);
   const [form, setForm] = useState({ kana: '', romaji: '', meaning_id: '', category: '', group: '', jlpt_level: 'N5' as JlptLevel, script_type: 'hiragana' as ScriptType });
   const deferredQuery = useDeferredValue(filters.query);
@@ -123,6 +124,10 @@ export default function KotobaScreen() {
             <MiniHeader title="Nomor" onMenu={() => setMenuOpen(true)} />
             <NumberReference onQuiz={() => router.navigate('/quiz')} />
           </>}
+          {learnMode === 'kanji' && <>
+            <MiniHeader title="Kanji" onMenu={() => setMenuOpen(true)} />
+            <KanjiReference />
+          </>}
         </View>
       </View>
       <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>
@@ -132,6 +137,7 @@ export default function KotobaScreen() {
             <MenuItem title="Basic" active={learnMode === 'basic'} onPress={() => { setLearnMode('basic'); setMenuOpen(false); }} />
             <MenuItem title="Huruf" active={learnMode === 'letter'} onPress={() => { setLearnMode('letter'); setMenuOpen(false); }} />
             <MenuItem title="Nomor" active={learnMode === 'number'} onPress={() => { setLearnMode('number'); setMenuOpen(false); }} />
+            <MenuItem title="Kanji" active={learnMode === 'kanji'} onPress={() => { setLearnMode('kanji'); setMenuOpen(false); }} />
           </View>
         </Pressable>
       </Modal>
@@ -340,6 +346,39 @@ function Pill({ text }: { text: string }) {
   return <Text style={[styles.pill, { backgroundColor: t.card2, color: t.sub, fontFamily: t.font }]} numberOfLines={1}>{text}</Text>;
 }
 
+function KanjiReference() {
+  const t = useTheme();
+  const [open, setOpen] = useState(basicKanji[0]?.kanji ?? '');
+  return (
+    <ScrollView contentContainerStyle={{ paddingBottom: 108 }} showsVerticalScrollIndicator={false}>
+      <View style={[styles.basicHero, { backgroundColor: t.card, borderColor: t.border }]}>
+        <Text style={[styles.basicTitle, { color: t.text, fontFamily: t.font }]}>Kanji basic</Text>
+        <Text style={[styles.basicText, { color: t.sub, fontFamily: t.font }]}>Kanji itu huruf makna. Satu kanji punya arti, onyomi, kunyomi, dan berubah bacaan saat masuk kata gabungan.</Text>
+        <Text style={[styles.basicText, { color: t.sub, fontFamily: t.font }]}>Onyomi biasanya buat gabungan kanji. Kunyomi sering buat kanji berdiri sendiri/okurigana. Hafal lewat contoh kata, jangan hafal bacaan doang.</Text>
+      </View>
+      {basicKanji.map((item) => {
+        const active = open === item.kanji;
+        return (
+          <Pressable key={item.kanji} onPress={() => setOpen(active ? '' : item.kanji)} style={[styles.kanjiCard, { backgroundColor: t.card, borderColor: active ? t.primary : t.border }]}>
+            <View style={styles.kanjiTop}>
+              <Text style={[styles.kanjiBig, { color: t.text, fontFamily: t.font }]}>{item.kanji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.kanjiMeaning, { color: t.text, fontFamily: t.font }]}>{item.meaning}</Text>
+                <Text style={[styles.kanjiReading, { color: t.primary, fontFamily: t.font }]}>音 {item.onyomi}</Text>
+                <Text style={[styles.kanjiReading, { color: t.primary, fontFamily: t.font }]}>訓 {item.kunyomi}</Text>
+              </View>
+            </View>
+            {active && <View style={[styles.kanjiDetail, { borderTopColor: t.border }]}>
+              <Text style={[styles.basicText, { color: t.sub, fontFamily: t.font }]}>{item.note}</Text>
+              {item.examples.map((example) => <Text key={`${item.kanji}-${example.word}`} style={[styles.kanjiExample, { color: t.text, fontFamily: t.font }]}>{example.word} · {example.reading} · {example.meaning}</Text>)}
+            </View>}
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
 function MiniHeader({ title, onMenu }: { title: string; onMenu: () => void }) {
   const t = useTheme();
   return <View style={[styles.compactHead, { backgroundColor: t.card, borderColor: t.border }]}>
@@ -415,6 +454,16 @@ const styles = StyleSheet.create({
   referenceBox: { flex: 1 },
   refTitle: { fontSize: 22, fontWeight: '900', marginBottom: 8 },
   refNote: { lineHeight: 20, marginBottom: 12 },
+  basicHero: { borderWidth: 1, borderRadius: 20, padding: 14, marginBottom: 12, gap: 8 },
+  basicTitle: { fontSize: 24, fontWeight: '900' },
+  basicText: { lineHeight: 20, fontWeight: '700' },
+  kanjiCard: { borderWidth: 1, borderRadius: 18, padding: 12, marginBottom: 10 },
+  kanjiTop: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  kanjiBig: { width: 64, textAlign: 'center', fontSize: 48, fontWeight: '900' },
+  kanjiMeaning: { fontSize: 16, fontWeight: '900', marginBottom: 4 },
+  kanjiReading: { fontSize: 13, fontWeight: '800', marginTop: 2 },
+  kanjiDetail: { borderTopWidth: 1, marginTop: 10, paddingTop: 10, gap: 7 },
+  kanjiExample: { fontWeight: '800', lineHeight: 19 },
   ruleCard: { borderWidth: 1, borderRadius: 16, padding: 12, marginBottom: 12, gap: 6 },
   lessonCard: { borderWidth: 1, borderRadius: 16, padding: 12, marginBottom: 10, gap: 8 },
   lessonHead: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
