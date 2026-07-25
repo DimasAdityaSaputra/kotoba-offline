@@ -12,6 +12,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="flashcard" options={{ title: 'Cards', tabBarIcon: ({ color, size }) => <Ionicons name="albums-outline" color={color} size={size} /> }} />
       <Tabs.Screen name="quiz" options={{ title: 'Quiz', tabBarIcon: ({ color, size }) => <Ionicons name="help-circle-outline" color={color} size={size} /> }} />
       <Tabs.Screen name="write" options={{ title: 'Write', tabBarIcon: ({ color, size }) => <Ionicons name="pencil-outline" color={color} size={size} /> }} />
+      <Tabs.Screen name="kanji" options={{ title: 'Kanji', tabBarIcon: ({ color, size }) => <Ionicons name="language-outline" color={color} size={size} /> }} />
       <Tabs.Screen name="add" options={{ title: 'Add', tabBarIcon: ({ color, size }) => <Ionicons name="add-circle-outline" color={color} size={size} /> }} />
       <Tabs.Screen name="settings" options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" color={color} size={size} /> }} />
     </Tabs>
