@@ -170,7 +170,7 @@ export default function WriteScreen() {
           <Svg width="100%" height="100%" viewBox="0 0 320 320">
             {guide?.flatMap((item, i) => item.fillPaths?.length
               ? item.fillPaths.map((path, fillIndex) => <Path key={`guide-${i}-${fillIndex}`} d={path} fill={i === stepIndex ? t.warn : t.border} opacity={i < stepIndex ? 0.12 : i === stepIndex ? 0.34 : 0.18} />)
-              : [<Path key={`guide-${i}`} d={item.path} stroke={i === stepIndex ? t.warn : t.border} strokeWidth={i === stepIndex ? 18 : 12} strokeDasharray={i === stepIndex ? undefined : '10 10'} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={i < stepIndex ? 0.14 : 0.42} />]
+              : [<Path key={`guide-${i}`} d={item.path} stroke={i === stepIndex ? t.warn : t.border} strokeWidth={i === stepIndex ? 13 : 7} strokeDasharray={i === stepIndex ? undefined : '8 12'} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={i < stepIndex ? 0.08 : i === stepIndex ? 0.5 : 0.16} />]
             )}
             {step && <Path d={`M ${step.start.x} ${step.start.y} L ${step.start.x + 0.1} ${step.start.y + 0.1}`} stroke="#22c55e" strokeWidth={14} strokeLinecap="round" />}
             {step && <Path d={`M ${step.end.x} ${step.end.y} L ${step.end.x + 0.1} ${step.end.y + 0.1}`} stroke="#ef4444" strokeWidth={14} strokeLinecap="round" />}

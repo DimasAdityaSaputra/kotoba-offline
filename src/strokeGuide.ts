@@ -55,7 +55,7 @@ function transformStep(step: StrokeStep, scale: number, dx: number, dy: number):
   const point = (p: Point) => ({ x: p.x * scale + dx, y: p.y * scale + dy });
   return {
     ...step,
-    path: transformPath(step.path, scale, dx, dy),
+    path: smoothStrokePath(step.points?.map(point) ?? parsePathPoints(transformPath(step.path, scale, dx, dy))),
     fillPaths: undefined,
     points: step.points?.map(point),
     start: point(step.start),
@@ -71,6 +71,18 @@ function transformPath(path: string, scale: number, dx: number, dy: number) {
     index += 1;
     return Number(next.toFixed(1)).toString();
   });
+}
+
+function smoothStrokePath(points: Point[]) {
+  if (points.length < 3) return points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
+  const parts = [`M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`];
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const mid = { x: (points[i].x + points[i + 1].x) / 2, y: (points[i].y + points[i + 1].y) / 2 };
+    parts.push(`Q ${points[i].x.toFixed(1)} ${points[i].y.toFixed(1)} ${mid.x.toFixed(1)} ${mid.y.toFixed(1)}`);
+  }
+  const last = points[points.length - 1];
+  parts.push(`L ${last.x.toFixed(1)} ${last.y.toFixed(1)}`);
+  return parts.join(' ');
 }
 
 function parsePathPoints(path: string) {
