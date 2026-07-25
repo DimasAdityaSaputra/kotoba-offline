@@ -21,8 +21,9 @@ export default function WriteScreen() {
   const [draft, setDraft] = useState('');
   const [message, setMessage] = useState('Ikuti stroke terang. Titik hijau = mulai, merah = akhir.');
   const [showAnimation, setShowAnimation] = useState(true);
-  const [snap, setSnap] = useState<{ from: string; to: { path: string; fill?: boolean }[] } | null>(null);
+  const [snap, setSnap] = useState<{ path: string; to: { path: string; fill?: boolean }[] } | null>(null);
   const anim = useRef(new Animated.Value(0)).current;
+  const snapAnim = useRef(new Animated.Value(0)).current;
   const draftRef = useRef('');
   const pointsRef = useRef<Point[]>([]);
   const padRef = useRef<ViewType>(null);
@@ -38,8 +39,6 @@ export default function WriteScreen() {
   const animInput = step?.points?.map((_, i) => i / Math.max(1, step.points!.length - 1)) ?? [0, 1];
   const animX = step?.points?.length ? anim.interpolate({ inputRange: animInput, outputRange: step.points.map((point) => point.x) }) : undefined;
   const animY = step?.points?.length ? anim.interpolate({ inputRange: animInput, outputRange: step.points.map((point) => point.y) }) : undefined;
-  const snapOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
-  const correctOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
 
   useEffect(() => { runAnimation(); }, [char, stepIndex, showAnimation]);
 
@@ -90,10 +89,14 @@ export default function WriteScreen() {
         return;
       }
       const done = step.fillPaths?.length ? step.fillPaths.map((path) => ({ path, fill: true })) : [{ path: step.path }];
-      setSnap({ from: path, to: done });
-      anim.stopAnimation();
-      anim.setValue(0);
-      Animated.timing(anim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => {
+      const from = resamplePoints(points, 18);
+      const to = resamplePoints(step.points ?? parsePathPoints(step.path), 18);
+      setSnap({ path: smoothPath(from), to: done });
+      snapAnim.stopAnimation();
+      snapAnim.setValue(0);
+      const listener = snapAnim.addListener(({ value }) => setSnap({ path: smoothPath(mixPoints(from, to, value)), to: done }));
+      Animated.timing(snapAnim, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => {
+        snapAnim.removeListener(listener);
         setSnap(null);
         setStrokes((current) => [...current, ...done]);
         if (stepIndex + 1 >= guide.length) setMessage('Mantap, bentuknya masuk. Bisa lanjut huruf berikutnya.');
@@ -175,8 +178,7 @@ export default function WriteScreen() {
             {step && <Path d={`M ${step.start.x} ${step.start.y} L ${step.start.x + 0.1} ${step.start.y + 0.1}`} stroke="#22c55e" strokeWidth={14} strokeLinecap="round" />}
             {step && <Path d={`M ${step.end.x} ${step.end.y} L ${step.end.x + 0.1} ${step.end.y + 0.1}`} stroke="#ef4444" strokeWidth={14} strokeLinecap="round" />}
             {strokes.map((item, i) => item.fill ? <Path key={i} d={item.path} fill={t.primary} opacity={0.95} /> : <Path key={i} d={item.path} stroke={t.primary} strokeWidth={10} strokeLinecap="round" strokeLinejoin="round" fill="none" />)}
-            {snap?.to.map((item, i) => item.fill ? <AnimatedPath key={`snap-to-${i}`} d={item.path} fill={t.primary} opacity={correctOpacity} /> : <AnimatedPath key={`snap-to-${i}`} d={item.path} stroke={t.primary} strokeWidth={10} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={correctOpacity} />)}
-            {snap && <AnimatedPath d={snap.from} stroke={t.primary} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={snapOpacity} />}
+            {snap && <Path d={snap.path} stroke={t.primary} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.9} />}
             {!!draft && !snap && <Path d={draft} stroke={t.primary} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.8} />}
             {showAnimation && animX && animY && <AnimatedCircle cx={animX} cy={animY} r={7} fill={t.primary} />}
           </Svg>
@@ -205,6 +207,39 @@ function baseKana(value: string) {
     ぱ: 'は', ぴ: 'ひ', ぷ: 'ふ', ぺ: 'へ', ぽ: 'ほ'
   };
   return map[value] ?? value;
+}
+
+function mixPoints(from: Point[], to: Point[], amount: number) {
+  return from.map((point, index) => ({ x: point.x + ((to[index]?.x ?? point.x) - point.x) * amount, y: point.y + ((to[index]?.y ?? point.y) - point.y) * amount }));
+}
+
+function resamplePoints(points: Point[], count: number) {
+  if (points.length <= 1) return Array.from({ length: count }, () => points[0] ?? { x: 0, y: 0 });
+  const total = points.reduce((sum, point, index) => index ? sum + Math.hypot(point.x - points[index - 1].x, point.y - points[index - 1].y) : 0, 0);
+  const result = [points[0]];
+  let target = total / (count - 1);
+  let walked = 0;
+  for (let i = 1; i < points.length && result.length < count - 1; i += 1) {
+    const prev = points[i - 1];
+    const next = points[i];
+    const segment = Math.hypot(next.x - prev.x, next.y - prev.y) || 1;
+    while (walked + segment >= target && result.length < count - 1) {
+      const ratio = (target - walked) / segment;
+      result.push({ x: prev.x + (next.x - prev.x) * ratio, y: prev.y + (next.y - prev.y) * ratio });
+      target += total / (count - 1);
+    }
+    walked += segment;
+  }
+  result.push(points[points.length - 1]);
+  while (result.length < count) result.push(points[points.length - 1]);
+  return result;
+}
+
+function parsePathPoints(path: string) {
+  const nums = [...path.matchAll(/-?\d+(?:\.\d+)?/g)].map((m) => Number(m[0]));
+  const points: Point[] = [];
+  for (let i = 0; i + 1 < nums.length; i += 2) points.push({ x: nums[i], y: nums[i + 1] });
+  return points;
 }
 
 function smoothPath(points: Point[]) {
