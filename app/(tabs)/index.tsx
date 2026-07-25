@@ -5,7 +5,7 @@ import { deleteVocab, initDb, listVocab, updateVocab } from '../../src/db';
 import { romajiToKana } from '../../src/kana';
 import { kanaGroups } from '../../src/kanaGroups';
 import { BASIC_DRILLS, BASIC_FLOW, BASIC_LESSONS, BASIC_PATTERNS, BASIC_PHRASES, BASIC_SENTENCES } from '../../src/basicLessons';
-import { basicKanji } from '../../src/kanjiData';
+import { basicKanji, type KanjiItem } from '../../src/kanjiData';
 import { numberToJapanese } from '../../src/numberQuiz';
 import { speakJapanese } from '../../src/speech';
 import { useTheme } from '../../src/theme';
@@ -346,9 +346,20 @@ function Pill({ text }: { text: string }) {
   return <Text style={[styles.pill, { backgroundColor: t.card2, color: t.sub, fontFamily: t.font }]} numberOfLines={1}>{text}</Text>;
 }
 
+const KANJI_CATEGORIES: { key: 'all' | KanjiItem['category']; label: string }[] = [
+  { key: 'all', label: 'Semua' },
+  { key: 'number', label: 'Nomor' },
+  { key: 'day', label: 'Hari/alam' },
+  { key: 'person', label: 'Orang' },
+  { key: 'nature', label: 'Alam' },
+  { key: 'size', label: 'Ukuran' }
+];
+
 function KanjiReference() {
   const t = useTheme();
   const [open, setOpen] = useState(basicKanji[0]?.kanji ?? '');
+  const [category, setCategory] = useState<'all' | KanjiItem['category']>('all');
+  const kanjiItems = category === 'all' ? basicKanji : basicKanji.filter((item) => item.category === category);
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 108 }} showsVerticalScrollIndicator={false}>
       <View style={[styles.basicHero, { backgroundColor: t.card, borderColor: t.border }]}>
@@ -356,7 +367,10 @@ function KanjiReference() {
         <Text style={[styles.basicText, { color: t.sub, fontFamily: t.font }]}>Kanji itu huruf makna. Satu kanji punya arti, onyomi, kunyomi, dan berubah bacaan saat masuk kata gabungan.</Text>
         <Text style={[styles.basicText, { color: t.sub, fontFamily: t.font }]}>Onyomi biasanya buat gabungan kanji. Kunyomi sering buat kanji berdiri sendiri/okurigana. Hafal lewat contoh kata, jangan hafal bacaan doang.</Text>
       </View>
-      {basicKanji.map((item) => {
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        {KANJI_CATEGORIES.map((item) => <Chip key={item.key} label={item.label} active={category === item.key} onPress={() => { setCategory(item.key); setOpen(''); }} />)}
+      </ScrollView>
+      {kanjiItems.map((item) => {
         const active = open === item.kanji;
         return (
           <Pressable key={item.kanji} onPress={() => setOpen(active ? '' : item.kanji)} style={[styles.kanjiCard, { backgroundColor: t.card, borderColor: active ? t.primary : t.border }]}>
